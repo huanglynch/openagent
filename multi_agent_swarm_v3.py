@@ -1367,6 +1367,21 @@ class MultiAgentSwarm:
         self._reset_cancel_flag()
 
         tracker = TimeTracker()
+        # 🔥 防御性自动多模态图片检测（飞书/文本路径自动生效）
+        if (image_paths is None or len(image_paths) == 0) and isinstance(task, str):
+            import re
+            matches = re.findall(r'(?:uploads[/\\]|/uploads/)([^"\s]+\.(?:png|jpg|jpeg|gif|bmp))', task, re.IGNORECASE)
+            if matches:
+                image_paths = []
+                upload_dir = Path("uploads")
+                for m in matches:
+                    candidate = upload_dir / m.strip()
+                    if candidate.exists():
+                        image_paths.append(str(candidate))
+                if image_paths:
+                    logging.info(f"🔍 自动识别图片附件（飞书/文本路径）：{image_paths}")
+                    if log_callback:
+                        log_callback(f"📸 自动加载 {len(image_paths)} 张图片为多模态输入")
         tracker.start()
         logging.info(f"\n{'=' * 80}")
         logging.info(f"📋 新任务: {task[:100]}{'...' if len(task) > 100 else ''}")

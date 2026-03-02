@@ -22,6 +22,7 @@ matplotlib>=3.7.0
 
 # ====================== PDF 处理（pdf_reader 工具必需） ======================
 PyMuPDF>=1.24.0          # import fitz（推荐写法）
+feedparser
 
 # ====================== OpenSandbox（强烈推荐，自动硬隔离） ======================
 # 安装后 code_executor.py 会自动切换为 Docker 生产级沙箱

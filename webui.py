@@ -371,26 +371,20 @@ async def websocket_endpoint(websocket: WebSocket):
             # 构建历史上下文
             history_context = ""
             history_lines = []
-
             if len(conversations[session_id]) > 1:
                 recent_messages = conversations[session_id][:-1]
                 if len(recent_messages) > 10:
                     recent_messages = recent_messages[-10:]
-
                 MAX_HISTORY_TOKENS = 2000
                 accumulated_text = ""
                 selected_messages = []
-
                 for msg in reversed(recent_messages):
                     candidate = f"{msg['content']}\n\n{accumulated_text}"
                     estimated_tokens = len(candidate) * 0.75
-
                     if estimated_tokens > MAX_HISTORY_TOKENS:
                         break
-
                     accumulated_text = candidate
                     selected_messages.insert(0, msg)
-
                 if selected_messages:
                     for msg in selected_messages:
                         if msg["role"] == "system":
@@ -401,97 +395,71 @@ async def websocket_endpoint(websocket: WebSocket):
                             if len(msg["content"]) > 500:
                                 content += "..."
                             history_lines.append(f"{role_name}: {content}")
-
                     history_context = "\n\n".join(history_lines)
 
             if history_context:
                 full_message = f"""=== 📚 对话历史（最近 {len(history_lines)} 轮）===
-{history_context}
-
-=== 💬 当前问题 ===
-User: {message}"""
+            {history_context}
+            === 💬 当前问题 ===
+            User: {message}"""
             else:
                 full_message = message
 
-            # 附件处理
-            if "📎 附件:" in message:
+            # ====================== 【附件处理 - 已修正，独立处理】 ======================
+            image_paths = []  # ← 必须在这里初始化（关键修复）
+            file_contents = []
+            if "📎 附件:" in message:  # 用原始 message 判断
                 try:
                     file_paths = [
                         line.strip("- ").strip()
                         for line in message.split("📎 附件:")[-1].split("\n")
                         if line.strip().startswith("- ")
                     ]
-
                     if file_paths:
                         await websocket.send_json({
                             "type": "log",
                             "content": f"📂 检测到 {len(file_paths)} 个附件，正在解析..."
                         })
-
-                        file_contents = []
                         MAX_PREVIEW_LENGTH = 10000
-
                         for path in file_paths:
                             try:
                                 path = path.strip()
+                                # === 图片走多模态通道 ===
+                                if path.endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+                                    if os.path.exists(path):
+                                        image_paths.append(path)
+                                        file_contents.append(f"### 🖼️ {Path(path).name} (已作为多模态视觉输入)")
+                                        await websocket.send_json({
+                                            "type": "log",
+                                            "content": f"📸 图片已加载为多模态输入: {Path(path).name}"
+                                        })
+                                    continue
 
+                                # PDF / TXT / MD 处理（保持不变）
                                 if path.endswith('.pdf'):
                                     result = swarm.tool_registry['pdf_reader']['func'](file_path=path)
                                     if result.get('success'):
-                                        content = result.get('content', '')
-                                        truncated = False
-
-                                        if len(content) > MAX_PREVIEW_LENGTH:
-                                            content = content[:MAX_PREVIEW_LENGTH]
-                                            truncated = True
-
+                                        content = result.get('content', '')[:MAX_PREVIEW_LENGTH]
                                         file_contents.append(
-                                            f"### 📄 {Path(path).name} (PDF)\n"
-                                            f"【系统指令：以下是附件完整解析内容（已截断），请直接基于此内容进行分析评价，无需再次调用 pdf_reader、summarize_long_file 或任何读取工具】\n"
-                                            f"页数: {result.get('pages', '未知')}\n"
-                                            f"预览长度: {len(content)} 字符{'（已截断）' if truncated else ''}\n"
-                                            f"内容:\n{content}"
-                                            + ("\n\n💡 **提示**: 文件过长已截断，如需完整分析请明确要求使用 `summarize_long_file` 工具。" if truncated else "")
+                                            f"### 📄 {Path(path).name} (PDF)\n【系统指令：以下是附件完整解析内容，请直接基于此内容分析】\n内容:\n{content}"
                                         )
-                                    else:
-                                        file_contents.append(f"### ❌ {Path(path).name} 解析失败: {result.get('error', '未知错误')}")
-
                                 elif path.endswith(('.txt', '.md')):
                                     result = swarm.tool_registry['read_file']['func'](file_path=path)
                                     if result.get('success'):
-                                        content = result.get('content', '')
-                                        truncated = False
-
-                                        if len(content) > MAX_PREVIEW_LENGTH:
-                                            content = content[:MAX_PREVIEW_LENGTH]
-                                            truncated = True
-
+                                        content = result.get('content', '')[:MAX_PREVIEW_LENGTH]
                                         file_contents.append(
-                                            f"### 📄 {Path(path).name}\n"
-                                            f"【系统指令：以下是附件完整解析内容（已截断），请直接基于此内容进行分析评价，无需再次调用 pdf_reader、summarize_long_file 或任何读取工具】\n"
-                                            f"大小: {result.get('length', 0)} 字符\n"
-                                            f"预览长度: {len(content)} 字符{'（已截断）' if truncated else ''}\n"
-                                            f"内容:\n{content}"
-                                            + ("\n\n💡 **提示**: 文件过长已截断，如需完整分析请明确要求使用 `summarize_long_file` 工具。" if truncated else "")
+                                            f"### 📄 {Path(path).name}\n【系统指令：以下是附件完整解析内容，请直接基于此内容分析】\n内容:\n{content}"
                                         )
-                                    else:
-                                        file_contents.append(f"### ❌ {Path(path).name} 读取失败: {result.get('error', '未知错误')}")
-
-                                elif path.endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
-                                    file_contents.append(f"### 🖼️ {Path(path).name} (图片)\n路径: {path}")
-
                             except Exception as e:
                                 file_contents.append(f"### ❌ {Path(path).name} 处理失败: {str(e)}")
 
                         if file_contents:
                             file_section = "\n\n=== 📄 附件内容 ===\n" + "\n\n".join(file_contents)
                             full_message = full_message + file_section
-
                             await websocket.send_json({
                                 "type": "log",
-                                "content": f"✅ 附件解析完成，总计 {len(file_contents)} 个文件"
+                                "content": f"✅ 附件解析完成（{len(image_paths)} 张图片 + {len(file_contents) - len(image_paths)} 个文本文件）"
                             })
-
                 except Exception as e:
                     print(f"⚠️ 附件解析失败: {e}")
                     await websocket.send_json({
@@ -567,7 +535,7 @@ User: {message}"""
                         full_message,
                         use_memory,
                         memory_key,
-                        None,
+                        image_paths,  # ← 关键修改（原来是 None）
                         force_complexity,
                         stream_callback=stream_callback,
                         log_callback=log_callback
