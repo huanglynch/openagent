@@ -116,7 +116,7 @@ email:
   imap_pass: ""   # ← 关键
   smtp_server: "smtp.163.com"
   smtp_port: 465                          
-  check_interval: 30
+  check_interval: 60
   trigger_keywords: ["[AI]", "[Swarm]", "AI处理", "@swarm", "@Echo", "Echo", "艾克", "埃克", "艾可", "艾柯"]   # ← 新增这一行
 
 # ============================================================
