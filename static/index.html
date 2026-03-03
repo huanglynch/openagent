@@ -7,18 +7,110 @@
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* 配色主题变量 */
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --accent-primary: #0ea5e9;
+            --accent-hover: #0284c8;
+            --message-user-bg: #0ea5e9;
+            --message-assistant-bg: #ffffff;
+            --button-gradient-start: #0ea5e9;
+            --button-gradient-end: #0284c8;
+            --upload-gradient-start: #4caf50;
+            --upload-gradient-end: #45a049;
+        }
+
+        /* 极简主题 */
+        [data-theme="minimal"] {
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f5f5f5;
+            --border-color: #e0e0e0;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --accent-primary: #2196f3;
+            --accent-hover: #1976d2;
+            --message-user-bg: #2196f3;
+            --message-assistant-bg: #ffffff;
+            --button-gradient-start: #2196f3;
+            --button-gradient-end: #1976d2;
+            --upload-gradient-start: #66bb6a;
+            --upload-gradient-end: #4caf50;
+        }
+
+        /* 商务主题 */
+        [data-theme="business"] {
+            --bg-primary: #1e293b;
+            --bg-secondary: #334155;
+            --bg-tertiary: #475569;
+            --border-color: #475569;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --accent-primary: #3b82f6;
+            --accent-hover: #2563eb;
+            --message-user-bg: #3b82f6;
+            --message-assistant-bg: #334155;
+            --button-gradient-start: #3b82f6;
+            --button-gradient-end: #2563eb;
+            --upload-gradient-start: #10b981;
+            --upload-gradient-end: #059669;
+        }
+
+        /* 森林主题 */
+        [data-theme="forest"] {
+            --bg-primary: #ecfdf5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #d1fae5;
+            --border-color: #a7f3d0;
+            --text-primary: #064e3b;
+            --text-secondary: #047857;
+            --accent-primary: #10b981;
+            --accent-hover: #059669;
+            --message-user-bg: #10b981;
+            --message-assistant-bg: #ffffff;
+            --button-gradient-start: #10b981;
+            --button-gradient-end: #059669;
+            --upload-gradient-start: #34d399;
+            --upload-gradient-end: #10b981;
+        }
+
+        /* 科技清新主题 */
+        [data-theme="tech"] {
+            --bg-primary: #f0f9ff;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e0f2fe;
+            --border-color: #bae6fd;
+            --text-primary: #0c4a6e;
+            --text-secondary: #0369a1;
+            --accent-primary: #06b6d4;
+            --accent-hover: #0891b2;
+            --message-user-bg: #06b6d4;
+            --message-assistant-bg: #ffffff;
+            --button-gradient-start: #06b6d4;
+            --button-gradient-end: #0891b2;
+            --upload-gradient-start: #14b8a6;
+            --upload-gradient-end: #0d9488;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: #f8fafc;
-            color: #0f172a;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
         .container {
-            background: #ffffff;
+            background: var(--bg-secondary);
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(15,23,42,0.08);
             width: 100%;
@@ -26,45 +118,48 @@
             height: 100vh;
             display: flex;
             overflow: hidden;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
         }
 
         /* Sidebar */
         .sidebar {
             width: 300px;
-            background: #f8fafc;
-            border-right: 1px solid #e2e8f0;
+            background: var(--bg-tertiary);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .sidebar-header {
             padding: 24px;
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
         }
-        .sidebar-header h2 { font-size: 18px; font-weight: 600; color: #0f172a; }
-        .sidebar-header p { font-size: 13px; color: #64748b; margin-top: 4px; }
+        .sidebar-header h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+        .sidebar-header p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
 
         .session-list { flex: 1; overflow-y: auto; padding: 12px; }
         .session-item {
             padding: 14px 16px;
             margin-bottom: 8px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s;
         }
         .session-item:hover, .session-item.active {
-            border-color: #0ea5e9;
-            background: #f0f9ff;
+            border-color: var(--accent-primary);
+            background: var(--bg-primary);
             transform: translateX(4px);
         }
 
         .new-session-btn {
             margin: 12px;
             padding: 14px;
-            background: #0ea5e9;
+            background: var(--accent-primary);
             color: white;
             border: none;
             border-radius: 12px;
@@ -72,19 +167,20 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .new-session-btn:hover { background: #0284c8; transform: translateY(-1px); }
+        .new-session-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
 
         /* Chat area */
         .chat-container { flex: 1; display: flex; flex-direction: column; }
         .chat-header {
             padding: 20px 24px;
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: background-color 0.3s, border-color 0.3s;
         }
-        .chat-header h1 { font-size: 22px; font-weight: 600; color: #0f172a; }
+        .chat-header h1 { font-size: 22px; font-weight: 600; color: var(--text-primary); }
 
         .header-buttons button {
             padding: 8px 16px;
@@ -95,8 +191,15 @@
             transition: all 0.2s;
             margin-left: 8px;
         }
-        .btn-settings { background: #f1f5f9; color: #475569; }
-        .btn-settings:hover { background: #e2e8f0; }
+        .btn-theme {
+            background: var(--accent-primary);
+            color: white;
+        }
+        .btn-theme:hover {
+            background: var(--accent-hover);
+        }
+        .btn-settings { background: var(--bg-tertiary); color: var(--text-secondary); }
+        .btn-settings:hover { background: var(--border-color); }
         .btn-export { background: #10b981; color: white; }
         .btn-export:hover { background: #059669; }
         .btn-clear { background: #ef4444; color: white; }
@@ -106,8 +209,9 @@
             flex: 1;
             overflow-y: auto;
             padding: 24px;
-            background: #fafafa;
+            background: var(--bg-primary);
             scroll-behavior: smooth;
+            transition: background-color 0.3s;
         }
 
         .message {
@@ -125,29 +229,31 @@
             position: relative;
             word-wrap: break-word;
             line-height: 1.6;
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .message.user .message-content {
-            background: #0ea5e9;
+            background: var(--message-user-bg);
             color: white;
         }
         .message.assistant .message-content {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
+            background: var(--message-assistant-bg);
+            border: 1px solid var(--border-color);
             box-shadow: 0 2px 12px rgba(15,23,42,0.06);
         }
 
         /* Thinking box */
         .thinking-details {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 20px;
             margin: 20px 0;
             box-shadow: 0 4px 12px rgba(15,23,42,0.05);
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .thinking-details summary {
             font-weight: 600;
-            color: #334155;
+            color: var(--text-primary);
             cursor: pointer;
             list-style: none;
         }
@@ -159,22 +265,24 @@
             max-height: 300px;
             overflow-y: auto;
             padding: 10px;
-            background: #f8fafc;
+            background: var(--bg-tertiary);
             border-radius: 8px;
+            transition: background-color 0.3s;
         }
         .log-entry {
             padding: 6px 10px;
             margin: 4px 0;
-            background: white;
-            border-left: 3px solid #0ea5e9;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent-primary);
             border-radius: 4px;
             font-size: 13px;
-            color: #475569;
+            color: var(--text-secondary);
+            transition: background-color 0.3s, border-color 0.3s;
         }
 
         /* Agent label */
         .agent-label {
-            background: #0ea5e9;
+            background: var(--accent-primary);
             color: white;
             padding: 4px 12px;
             border-radius: 9999px;
@@ -188,27 +296,29 @@
         .message-actions {
             margin-top: 12px;
             padding-top: 12px;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid var(--border-color);
             display: flex;
             gap: 8px;
+            transition: border-color 0.3s;
         }
         .message-actions button {
             padding: 6px 14px;
             font-size: 13px;
-            background: #f1f5f9;
+            background: var(--bg-tertiary);
             border: none;
             border-radius: 6px;
-            color: #64748b;
+            color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s;
         }
-        .message-actions button:hover { background: #e2e8f0; color: #334155; }
+        .message-actions button:hover { background: var(--border-color); color: var(--text-primary); }
 
         /* Input area */
         .input-area {
             padding: 20px;
-            background: white;
-            border-top: 1px solid #e2e8f0;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
         }
 
         .input-wrapper {
@@ -226,10 +336,10 @@
         }
 
         .attachment-card {
-            background: #ffffff;           /* 纯白底，极高对比 */
-            color: #0f172a;
-            border: 2px solid #0ea5e9;
-            border-left-width: 6px;        /* 粗左边条，超级醒目 */
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--accent-primary);
+            border-left-width: 6px;
             box-shadow: 0 3px 10px rgba(14, 165, 233, 0.25);
             padding: 12px 16px;
             border-radius: 12px;
@@ -237,16 +347,17 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .attachment-card strong {
-            color: #0369a1;
+            color: var(--accent-primary);
             font-weight: 700;
         }
 
         #messageInput {
             flex: 1;
             padding: 15px 20px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 15px;
             font-size: 14px;
             outline: none;
@@ -257,16 +368,18 @@
             overflow-y: auto;
             font-family: inherit;
             line-height: 1.5;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
         #messageInput:focus {
-            border-color: #667eea;
+            border-color: var(--accent-primary);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .action-btn {
             padding: 15px 24px;
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c8 100%);  /* 清新天空蓝，简洁现代 */
+            background: linear-gradient(135deg, var(--button-gradient-start) 0%, var(--button-gradient-end) 100%);
             color: white;
             border: none;
             border-radius: 15px;
@@ -293,7 +406,7 @@
         }
 
         .upload-btn {
-            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            background: linear-gradient(135deg, var(--upload-gradient-start) 0%, var(--upload-gradient-end) 100%);
         }
 
         .upload-btn:hover:not(:disabled) {
@@ -307,9 +420,9 @@
             right: -400px;
             width: 400px;
             height: 100vh;
-            background: white;
+            background: var(--bg-secondary);
             box-shadow: -5px 0 20px rgba(0,0,0,0.2);
-            transition: right 0.3s;
+            transition: right 0.3s, background-color 0.3s;
             z-index: 1000;
             overflow-y: auto;
         }
@@ -320,7 +433,7 @@
 
         .settings-header {
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--accent-primary);
             color: white;
             display: flex;
             justify-content: space-between;
@@ -337,10 +450,11 @@
 
         .setting-group h3 {
             font-size: 16px;
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 15px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
+            border-bottom: 2px solid var(--border-color);
+            transition: color 0.3s, border-color 0.3s;
         }
 
         .setting-item {
@@ -352,7 +466,7 @@
 
         .setting-item label {
             font-size: 14px;
-            color: #666;
+            color: var(--text-secondary);
             flex: 1;
         }
 
@@ -367,7 +481,7 @@
         }
 
         .toggle-switch.active {
-            background: #667eea;
+            background: var(--accent-primary);
         }
 
         .toggle-switch::after {
@@ -390,9 +504,12 @@
         .setting-item select {
             width: 80px;
             padding: 6px 10px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 6px;
             font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
         }
 
         .setting-item select {
@@ -410,19 +527,49 @@
             height: 30px;
         }
 
+        /* Theme selector */
+        .theme-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .theme-option {
+            padding: 8px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .theme-option.active {
+            border-color: var(--accent-primary);
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .theme-option:hover {
+            border-color: var(--accent-primary);
+        }
+
         /* Markdown styles */
         .message-content pre {
-            background: #f8fafc;
+            background: var(--bg-tertiary);
             padding: 12px;
             border-radius: 8px;
             overflow-x: auto;
             margin: 12px 0;
+            transition: background-color 0.3s;
         }
         .message-content code {
-            background: #f1f5f9;
+            background: var(--bg-tertiary);
             padding: 2px 6px;
             border-radius: 4px;
             font-size: 13px;
+            transition: background-color 0.3s;
         }
         .message-content pre code {
             background: none;
@@ -465,6 +612,12 @@
                 max-width: 90%;
             }
         }
+        /* ==================== 上传按钮和发送按钮宽度减少 1/4 ==================== */
+        #sendBtn,
+        .action-btn.upload-btn {
+            min-width: 90px !important;     /* 原 120px → 90px（缩小 25%） */
+            padding: 15px 18px !important;  /* 左右内边距同步优化，更协调 */
+        }
     </style>
 </head>
 <body>
@@ -482,6 +635,7 @@
             <div class="chat-header">
                 <h1>💬 MultiAgentSwarm</h1>
                 <div class="header-buttons">
+                    <button class="btn-theme" onclick="showThemeSelector()">🎨 主题</button>
                     <button class="btn-settings" onclick="toggleSettings()">⚙️ 设置</button>
                     <button class="btn-export" onclick="exportChat()">💾 导出</button>
                     <button class="btn-clear" onclick="clearChat()">🗑️ 清空</button>
@@ -492,9 +646,7 @@
 
             <div class="input-area">
                 <div class="file-list-container" id="uploadedFiles"></div>
-                <!-- ✅ 中止按钮（默认隐藏）-->
                 <div class="control-buttons" style="display: flex; gap: 10px; margin-bottom: 12px; justify-content: flex-end;">
-                    <!-- ✅ 推荐写法（确保红色生效）-->
                     <button
                         id="cancelBtn"
                         class="action-btn"
@@ -519,7 +671,7 @@
                         onclick="document.getElementById('fileInput').click()"
                         title="支持 PDF、TXT、MD、图片（最大 10MB）"
                     >
-                        📎 上传附件
+                        📎 附件
                     </button>
                     <input
                         type="file"
@@ -544,6 +696,17 @@
             <button class="close-settings" onclick="toggleSettings()">✕</button>
         </div>
         <div class="settings-content">
+            <div class="setting-group">
+                <h3>🎨 配色方案</h3>
+                <div class="theme-selector">
+                    <div class="theme-option active" data-theme="current" onclick="switchTheme('current')">当前</div>
+                    <div class="theme-option" data-theme="minimal" onclick="switchTheme('minimal')">极简</div>
+                    <div class="theme-option" data-theme="business" onclick="switchTheme('business')">商务</div>
+                    <div class="theme-option" data-theme="forest" onclick="switchTheme('forest')">森林</div>
+                    <div class="theme-option" data-theme="tech" onclick="switchTheme('tech')">科技清新</div>
+                </div>
+            </div>
+
             <div class="setting-group">
                 <h3>🚀 增强功能</h3>
                 <div class="setting-item">
@@ -606,7 +769,7 @@
             </div>
 
             <button
-                style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; margin-top: 20px;"
+                style="width: 100%; padding: 12px; background: var(--accent-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; margin-top: 20px;"
                 onclick="saveSettings()"
             >
                 💾 保存设置
@@ -623,6 +786,7 @@
         let thinkingDetailsElement = null;
         let uploadedFilePaths = [];
         let heartbeatInterval = null;
+        let currentTheme = 'current';
 
         // 配置 Marked.js
         marked.setOptions({
@@ -631,6 +795,43 @@
             headerIds: false,
             mangle: false
         });
+
+        // ==================== 主题切换功能 ====================
+        function switchTheme(theme) {
+            currentTheme = theme;
+
+            // 更新主题选择器UI
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            document.querySelector(`[data-theme="${theme}"]`).classList.add('active');
+
+            // 应用主题
+            if (theme === 'current') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+
+            // 保存主题偏好
+            localStorage.setItem('preferred-theme', theme);
+        }
+
+        function showThemeSelector() {
+            toggleSettings();
+            // 滚动到主题选择区域
+            setTimeout(() => {
+                document.querySelector('.theme-selector').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        }
+
+        // 加载保存的主题
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('preferred-theme');
+            if (savedTheme) {
+                switchTheme(savedTheme);
+            }
+        }
 
         // ==================== 文件上传逻辑 ====================
         async function handleFileUpload(event) {
@@ -692,7 +893,6 @@
             const wsUrl = protocol + '//' + window.location.host + '/ws';
             ws = new WebSocket(wsUrl);
 
-            // ✅ 心跳保活（每30秒发送一次 pong）
             if (heartbeatInterval) {
                 clearInterval(heartbeatInterval);
             }
@@ -706,7 +906,6 @@
             ws.onmessage = function(event) {
                 const data = JSON.parse(event.data);
 
-                // ✅ 忽略心跳消息
                 if (data.type === 'ping') {
                     return;
                 }
@@ -738,7 +937,6 @@
                     isProcessing = false;
                     document.getElementById('sendBtn').disabled = false;
                     loadSessions();
-                    // ✅ 隐藏中止按钮
                     const cancelBtn = document.getElementById('cancelBtn');
                     cancelBtn.style.display = 'none';
                     cancelBtn.textContent = '⏸️ 中止任务';
@@ -766,7 +964,6 @@
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
 
-            // ✅ 严格拦截空消息（无提示，直接返回）
             if (!message && uploadedFilePaths.length === 0) {
                 return;
             }
@@ -776,7 +973,6 @@
             isProcessing = true;
             document.getElementById('sendBtn').disabled = true;
 
-            // ✅ 显示中止按钮
             const cancelBtn = document.getElementById('cancelBtn');
             cancelBtn.style.display = 'inline-flex';
             cancelBtn.disabled = false;
@@ -787,7 +983,6 @@
                 fullMessage = "请仔细分析这个PDF附件的主要内容,给出结构化总结、关键点提取和专业建议。";
             }
 
-            // 二次校验
             if (!fullMessage && uploadedFilePaths.length === 0) {
                 isProcessing = false;
                 document.getElementById('sendBtn').disabled = false;
@@ -828,14 +1023,12 @@
             document.getElementById('uploadedFiles').innerHTML = '';
         }
 
-        // ✅ 新增：取消任务函数
         function cancelTask() {
             if (!ws || ws.readyState !== WebSocket.OPEN) {
                 alert('⚠️ 连接已断开');
                 return;
             }
 
-            // ✅ 正确代码（恢复完整提示）
             if (confirm('确定要中止当前任务吗？\n\n⚠️ 注意：正在执行的 API 调用会完成后才能中止。')) {
                 ws.send(JSON.stringify({ type: "cancel" }));
 
@@ -965,7 +1158,7 @@
 
                         htmlContent += '<div class="attachment-card">' +
                             '<span style="font-size: 20px;">' + icon + '</span>' +
-                            '<strong style="color: #667eea;">' + filename + '</strong>' +
+                            '<strong>' + filename + '</strong>' +
                             '</div>';
                     });
                     htmlContent += '</div>';
@@ -1006,7 +1199,6 @@
                 textToCopy = tempClone.textContent.trim() || tempClone.innerText.trim();
             }
 
-            // ✅ 使用 Clipboard API（现代浏览器）
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(textToCopy).then(function() {
                     const originalText = btn.textContent;
@@ -1024,12 +1216,10 @@
                     fallbackCopy(textToCopy, btn);
                 });
             } else {
-                // ✅ 降级方案（兼容旧浏览器）
                 fallbackCopy(textToCopy, btn);
             }
         }
 
-        // ==================== 降级复制方案 ====================
         function fallbackCopy(text, btn) {
             const textarea = document.createElement('textarea');
             textarea.value = text;
@@ -1114,7 +1304,7 @@
                     div.className = 'session-item';
                     if (session.id === currentSessionId) div.classList.add('active');
                     div.innerHTML = '<div style="font-weight: bold; margin-bottom: 5px;">💬 会话 ' +
-                        session.id.slice(0, 8) + '</div><div style="font-size: 12px; color: #999;">' +
+                        session.id.slice(0, 8) + '</div><div style="font-size: 12px; color: var(--text-secondary);">' +
                         session.last_message + '...</div>';
                     div.onclick = function(e) { loadSession(session.id, e); };
                     listDiv.appendChild(div);
@@ -1233,6 +1423,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
+            loadSavedTheme(); // 加载保存的主题
             await loadConfig();
             await loadSessions();
             createNewSession();
