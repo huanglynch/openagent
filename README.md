@@ -1,7 +1,7 @@
-**MultiAgentSwarm WebUI v3.2.0（ReAct 可视化版）**  
-**Self-Adaptive Digital Team | 自适应数字团队**  
+# MultiAgentSwarm v3.2.0 (ReAct Visualization Edition)
+**Self-Adaptive Digital Team**  
 **Enterprise-grade Multi-Agent Collaboration Framework with Full ReAct Visibility**  
-**一个真正“看得见思考”的活的数字组织**
+**The only swarm that lets you literally watch every agent think.**
 
 <p align="center">
   <img src="images/architecture-diagram.png" alt="MultiAgentSwarm v3.2.0 Architecture" width="95%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
@@ -11,7 +11,7 @@
 
 ### Why This Project Exists (First-Principles Thinking)
 
-Most multi-agent frameworks (AutoGen, CrewAI, LangGraph, MetaGPT) follow the same pattern:  
+Most multi-agent frameworks follow the same pattern:  
 **“Throw all agents at every task → burn tokens → pray for good output.”**
 
 We started from scratch with two axioms:
@@ -25,20 +25,20 @@ We started from scratch with two axioms:
 
 ### ✨ Core Features (v3.2.0 Major Upgrades)
 
-**1. 🧭 Explicit ReAct Thinking Process（架构图 100% 对齐）** ★ **2026 可视化核心**  
+**1. 🧭 Explicit ReAct Thinking Process (100% Architecture Alignment)** ★ **2026 Visualization Core**  
 - Every Agent response **must** start with:  
-  `Thinking:`（原因分析）  
-  `Action:`（调用工具或 Final Answer）  
-  `Action Input:`（参数或最终答案摘要）  
-- Tool results clearly marked as **【Observation】**（红色独立标记）  
-- Real-time streaming makes the entire thinking chain visible to users and developers.
+  `Thinking:` (reasoning)  
+  `Action:` (tool name or Final Answer)  
+  `Action Input:` (parameters or answer summary)  
+- Tool results clearly marked as **【Observation】** (highlighted in red)  
+- Real-time WebSocket streaming makes the entire thinking chain visible.
 
-**2. 📋 Dynamic Master Plan Refresh（动态规划闭环）**  
-- Automatically refreshes Master Plan every 3 rounds **or** when quality score < 75  
-- Perfectly closes the “更新prompt” loop in the original architecture diagram  
-- All Agents always stay aligned with the latest plan — zero long-term drift.
+**2. 📋 Dynamic Master Plan Refresh (Closed-Loop Planning)**  
+- Automatically refreshes Master Plan every 3 rounds or when quality score < 75  
+- Perfectly closes the “update prompt” loop in the original ReAct diagram  
+- Zero long-term drift — all agents stay aligned.
 
-**3. 🧭 Intelligent Routing（智能任务路由）** ★ 2026 旗舰特性  
+**3. 🧭 Intelligent Routing** ★ **2026 Flagship Feature**  
 - Auto-detects: **Simple / Medium / Complex** (rule + LLM dual judgment)  
 - Automatic fallback + per-request force mode
 
@@ -56,37 +56,36 @@ We started from scratch with two axioms:
 - Stops on quality convergence (Δ < 3)  
 - All thresholds configurable in real time via API
 
-**7. 🌐 Beautiful Production WebUI（v3.2.0 增强版）** ★ **全新**  
-- True per-Agent WebSocket streaming + expandable “🤔 Thinking Process” panel  
+**7. 🌐 Beautiful Production WebUI (v3.2.0 Enhanced)** ★ **Brand New**  
+- True per-agent WebSocket streaming + expandable “🤔 Thinking Process” panel  
 - Master Plan dynamic refresh logs visible in real time  
 - Multi-session management + one-click Markdown export  
-- File upload (PDF/TXT/MD/images, max 10MB) **with automatic Chinese filename sanitization**  
-- `/uploads` static mount → **modified reports/Excel/PDFs can be downloaded directly**  
+- File upload (PDF/TXT/MD/images, max 10MB) with automatic Chinese filename sanitization  
+- `/uploads` static mount → modified reports/Excel/PDFs downloadable with one click  
 - Task cancel button + 30s heartbeat keep-alive  
-- Full **Feishu official SDK long connection** with immediate 👍 reaction on message receipt
+- Full Feishu official SDK long connection with instant 👍 reaction
 
-**8. 🔒 OpenSandbox Dual-Mode Code Executor（安全沙箱）**  
+**8. 🔒 OpenSandbox Dual-Mode Code Executor**  
 - Installed → Docker hard isolation (recommended)  
-- Not installed → auto fallback to legacy threading + clear installation prompt  
-- Built-in numpy/pandas/matplotlib + auto plot saving
+- Not installed → auto fallback + clear installation prompt
 
 **9. 🌍 Local Model Support + 25+ Ready-to-Use Skills**  
 - Any OpenAI-compatible LLM (Ollama, vLLM, DeepSeek, Qwen, etc.) via `base_url`  
-- **25+ Skills out of the box** (web search, PDF parser, file read/write, Python sandbox, image analysis, etc.)  
-- **Drop-and-play Skill system**: Just drop any `.py` tool or `.md` knowledge file into `/skills/` — instantly loaded
+- **25+ Skills out of the box** (web search, PDF parser, file I/O, Python sandbox, image analysis, etc.)  
+- **Drop-and-play Skill system**: Drop any `.py` tool or `.md` knowledge file into `/skills/` — instantly loaded
 
 ---
 
 ### 📊 Performance Comparison
 
-| Metric                  | v2.9.2     | v3.1.0      | v3.2.0 (现在)          | Improvement      |
-|-------------------------|------------|-------------|------------------------|------------------|
-| Simple task time        | 8-12s      | 1-3s        | **1-3s**               | -75%            |
-| Complex task quality    | 8.0/10     | 9.5/10      | **9.7/10**             | +21%            |
-| Thinking transparency   | 无         | 部分        | **完整实时可见**       | 革命性提升      |
-| Plan drift (5+ rounds)  | 中         | 低          | **几乎为 0**           | 彻底解决        |
-| Token usage (complex)   | Baseline   | -40~60%     | **-45~65%**            | 进一步节省      |
-| File handling           | 无         | 基础        | **中文名净化 + 下载支持** | 生产级可用     |
+| Metric                  | v2.9.2     | v3.1.0      | v3.2.0 (Now)               | Improvement      |
+|-------------------------|------------|-------------|----------------------------|------------------|
+| Simple task time        | 8-12s      | 1-3s        | **1-3s**                   | -75%            |
+| Complex task quality    | 8.0/10     | 9.5/10      | **9.7/10**                 | +21%            |
+| Thinking transparency   | None       | Partial     | **Full real-time visible** | Revolutionary   |
+| Plan drift (5+ rounds)  | Medium     | Low         | **Almost 0**               | Completely solved |
+| Token usage (complex)   | Baseline   | -40~60%     | **-45~65%**                | Further savings |
+| File handling           | None       | Basic       | **Chinese name cleanup + download** | Production-ready |
 
 ---
 
@@ -95,23 +94,23 @@ We started from scratch with two axioms:
 ```bash
 git clone https://github.com/yourname/MultiAgentSwarm.git
 cd MultiAgentSwarm
-uv pip install -r requirements.txt        # 推荐 uv（更快）
+uv pip install -r requirements.txt        # Recommended (faster)
 ```
 
-**启动 OpenSandbox（强烈推荐，生产级沙箱）**
+**Start OpenSandbox (strongly recommended for production)**  
 ```bash
 opensandbox-server init-config ~/.sandbox.toml --example docker
-# 新终端运行（保持后台）
+# Run in a new terminal (keep running)
 opensandbox-server
 ```
 
-**启动 WebUI（推荐）**
+**Start WebUI (recommended)**  
 ```bash
 python webui.py
 ```
 → Open **http://localhost:8060**
 
-**CLI 快速验证**
+**CLI quick test**  
 ```bash
 python multi_agent_swarm_v3.py
 ```
@@ -124,7 +123,7 @@ python multi_agent_swarm_v3.py
 openai:
   default_model: "gpt-4o-mini"          
   context_limit_k: "128"                
-  base_url: "http://localhost:11434/v1" # ← Ollama / vLLM / 任意兼容接口
+  base_url: "http://localhost:11434/v1" # Ollama / vLLM / any compatible
 
 advanced_features:
   adversarial_debate:
@@ -138,7 +137,7 @@ intelligent_routing:
   force_complexity: null                # "simple" / "medium" / "complex"
 ```
 
-All features (debate, graph, reflection) are hot-reloadable via WebUI `/api/config`.
+All features are hot-reloadable via WebUI `/api/config`.
 
 ---
 
@@ -147,7 +146,7 @@ All features (debate, graph, reflection) are hot-reloadable via WebUI `/api/conf
 - Beautiful WebUI with real-time streaming + cancel button + expandable ReAct panel
 - Upload images/PDFs/TXT/MD → auto multi-modal or text parsing
 - Talk directly to Feishu (group/private) → bot replies automatically with 👍
-- Generate downloadable reports with one click (`/uploads/` served)
+- Generate downloadable reports with one click
 - Export any conversation as Markdown
 - **25+ Skills** + instant skill extension via `/skills/`
 - Persistent PrimalMemory + Vector DB across restarts
@@ -159,14 +158,14 @@ All features (debate, graph, reflection) are hot-reloadable via WebUI `/api/conf
 
 ```
 MultiAgentSwarm/
-├── webui.py                    # FastAPI + WebSocket + 飞书长连接（主入口）
-├── multi_agent_swarm_v3.py     # Swarm 核心逻辑
-├── skills/                     # 动态工具（25+ 开箱即用 + 自定义 .py/.md）
-├── uploads/                    # 用户上传 + 生成文件（可直接下载）
-├── static/index.html           # 前端页面
-├── requirements.txt            # 完整依赖（含 OpenSandbox）
-├── swarm_config.yaml           # 配置（飞书、Agent、增强功能开关）
-└── memory/                     # PrimalMemory + Vector DB + 知识图谱
+├── webui.py                    # FastAPI + WebSocket + Feishu (main entry)
+├── multi_agent_swarm_v3.py     # Core swarm logic
+├── skills/                     # 25+ ready skills + custom .py/.md
+├── uploads/                    # Uploads + generated files (directly downloadable)
+├── static/index.html           # Frontend
+├── requirements.txt            # Full dependencies
+├── swarm_config.yaml           # All settings
+└── memory/                     # PrimalMemory + Vector DB + Knowledge Graph
 ```
 
 ---
@@ -175,7 +174,7 @@ MultiAgentSwarm/
 
 ```bash
 Python 3.10+
-uv pip install -r requirements.txt   # 或 pip
+uv pip install -r requirements.txt   # or pip
 ```
 
 No GPU required. Model caching automatic. OpenSandbox optional (auto fallback).
@@ -263,19 +262,19 @@ cd MultiAgentSwarm
 uv pip install -r requirements.txt
 ```
 
-**启动 OpenSandbox（推荐）**
+**启动 OpenSandbox（推荐）**  
 ```bash
 opensandbox-server init-config ~/.sandbox.toml --example docker
 opensandbox-server
 ```
 
-**启动 WebUI**
+**启动 WebUI**  
 ```bash
 python webui.py
 ```
 访问 → **http://localhost:8060**
 
-**CLI 测试**
+**CLI 测试**  
 ```bash
 python multi_agent_swarm_v3.py
 ```
