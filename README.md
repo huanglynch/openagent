@@ -38,6 +38,7 @@ Result: **MultiAgentSwarm v3** — the only framework that:
 - Keeps lifelong memory with automatic decay
 - Gives you **full transparency** (forced ReAct + Thinking/Action format)
 - Ships production-ready WebUI + Feishu long-connection out of the box
+- Email
 
 ---
 
@@ -292,6 +293,7 @@ No GPU required. Model caching automatic. OpenSandbox optional (auto fallback).
 - `/uploads` 静态挂载 → **修改后的报告/Excel/PDF 可直接点击下载**  
 - 任务取消按钮 + 30秒心跳保活  
 - 完整**飞书官方 SDK 长连接** + 收到消息立即自动👍反应
+- Email
 
 **8. 🔒 OpenSandbox 双模式代码执行器**  
 - 已安装 → Docker 硬隔离（推荐）  
