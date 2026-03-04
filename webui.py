@@ -1193,10 +1193,6 @@ def start_email_poller(config: dict):
                         print(f"📧 [{idx}/{len(emails)}] {email_data['subject'][:40]}")
                         print(f"👤 {email_data['from']}")
 
-                        if email_data['attachments']:
-                            question += "\n\n[附件]\n" + "\n".join(f"- {a}" for a in email_data['attachments'])
-                            print(f"📎 {len(email_data['attachments'])} 个附件")
-
                         # 保持和飞书/WebUI 完全一致的干净输入
                         full_question = f"[来自邮件]\n{email_data['subject']}\n\n{email_data['body']}"
 
