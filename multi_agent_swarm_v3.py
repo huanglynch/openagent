@@ -947,7 +947,7 @@ class MultiAgentSwarm:
         # ====================== 【低内存自适应模式 - 最小改动实现】 ======================
         # 目的：2GB Ubuntu / 4GB Win10 流畅运行，自动覆盖高内存配置
         if cfg.get("low_memory_mode", False):
-            cfg.setdefault("swarm", {})["max_concurrent_agents"] = 1
+            cfg.setdefault("swarm", {})["max_concurrent_agents"] = 1  # Grok强烈推荐1 ！！！
             cfg.setdefault("swarm", {})["max_rounds"] = 6
             cfg.setdefault("swarm", {}).setdefault("vector_memory", {})["enabled"] = False
 
