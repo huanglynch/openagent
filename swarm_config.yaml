@@ -109,12 +109,12 @@ shared_knowledge: |
   - 每次贡献前，先用 [CRITIQUE] 标记指出上一轮的 1 个漏洞或可改进点。
 
 feishu:
-  enable: False
+  enable: false
   app_id: "1234567890"                  # 你的 App ID
   app_secret: "你的AppSecret粘贴在这里"   # ← 必须正确！
 
 email:
-  enable: False
+  enable: false
   imap_server: "imap.163.com"
   imap_user: ""          # ← 改成你的
   imap_pass: ""   # ← 关键
