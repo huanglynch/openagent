@@ -1193,51 +1193,24 @@ def start_email_poller(config: dict):
                         print(f"📧 [{idx}/{len(emails)}] {email_data['subject'][:40]}")
                         print(f"👤 {email_data['from']}")
 
-                        question = f"[邮件主题]\n{email_data['subject']}\n\n[邮件内容]\n{email_data['body']}"
-
                         if email_data['attachments']:
                             question += "\n\n[附件]\n" + "\n".join(f"- {a}" for a in email_data['attachments'])
                             print(f"📎 {len(email_data['attachments'])} 个附件")
 
-                        print("🤖 AI 处理中...")
+                        # 保持和飞书/WebUI 完全一致的干净输入
+                        full_question = f"[来自邮件]\n{email_data['subject']}\n\n{email_data['body']}"
 
-                        # ✅ 调用 Swarm
-                        # 修改为：
-                        enhanced_question = question + """
+                        if email_data['attachments']:
+                            full_question += "\n\n[附件]\n" + "\n".join(f"- {a}" for a in email_data['attachments'])
 
-                        【强制执行指令】
-                        这是一个邮件场景，收件人期待**可直接使用的完整结果**，而非任务计划或执行日志。
-                        
-                        1. **执行，而非计划**：
-                           - 如果生成了 Master Plan（任务拆解表格），必须**真正执行每个子任务**
-                           - 禁止仅返回"| ID | 子任务 | Phase |"这样的计划表格
-                           - 必须调用工具、获取数据、生成实际内容
-                        2. **输出格式要求**：
-                           - 面向收件人，而非面向系统内部
-                           - 包含实际内容：数据、链接、图表、文件路径
-                           - 结构清晰：标题 → 核心要点 → 详细分析 → 来源/附件
-                        
-                        3. **质量标准**：
-                           - 完整性：涵盖用户请求的所有方面
-                           - 真实性：所有信息都有来源或工具输出支持
-                           - 可用性：用户无需二次处理，可直接使用
-                        
-                        ❌ **禁止输出**：
-                        - 任务拆解表格（如 "| ID | 子任务描述 | Phase 1 |"）
-                        - 执行日志（如 "已调用工具 web_search..."）
-                        - 空洞的讨论（如 "可以从以下几个方面分析..."）
-                        
-                        ✅ **必须输出**：
-                        - 实际内容（新闻摘要、数据分析结果、报告文件等）
-                        - 信息来源（如有。例如链接、数据来源等）
-                        - 结构化呈现（Markdown 格式，便于阅读）
-                        """
+                        print("🤖 AI 处理中...（使用与 WebUI/飞书一致的 prompt）")
 
+                        # ✅ 完全一致的调用（无任何强制指令）
                         answer = global_swarm.solve(
-                            enhanced_question,
+                            full_question,
                             use_memory=True,
-                            memory_key="email_auto",
-                            force_complexity="complex"  # 确保进入完整模式
+                            memory_key="email_auto"
+                            # 故意不传 force_complexity，让它走默认路由，和其他渠道完全一致
                         )
 
                         print(f"✅ AI 完成（{len(answer)} 字符）")
