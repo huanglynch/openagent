@@ -237,7 +237,7 @@ No GPU required. Model caching automatic. OpenSandbox optional (auto fallback).
 - 彻底清理测试残留
 - WebUI 完整流式 + 文件智能生成下载 + 飞书长连接 👍
 
-### ✨ 核心特性（v3.2.0 重磅升级）
+### ✨ 核心特性
 
 **1. 🧭 显式 ReAct 思考过程（架构图 100% 对齐）** ★ **2026 可视化核心**  
 - 每条 Agent 回复**必须**以以下格式开头：  
