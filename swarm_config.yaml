@@ -156,7 +156,7 @@ agents:
     temperature: 0.5
     stream: false
     max_tokens: 4096
-    enabled_tools: ["web_search"]
+    enabled_tools: ["web_search", "ut_engine"]
 
   - name: Lucas
     role: "你是执行与总结专家，擅长把观点整合成可落地方案，并在最终综合时确保结构完整、文件交付决策正确。"
@@ -166,4 +166,4 @@ agents:
     temperature: 0.65
     stream: true
     max_tokens: 4096
-    enabled_tools: ["write_file", "web_search", "browse_page", "get_project_structure"]
+    enabled_tools: ["write_file", "web_search", "browse_page", "get_project_structure", "ut_engine"]
