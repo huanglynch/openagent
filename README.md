@@ -187,7 +187,7 @@ No GPU required. Model caching automatic. OpenSandbox optional (auto fallback).
 
 ## 中文版 <a id="chinese-version"></a>
 
-**MultiAgentSwarm WebUI v3.2.0**  
+**MultiAgentSwarm WebUI**  
 **一个真正看得见Agent“思考”的自适应数字团队**
 
 **MultiAgentSwarm v3.2.0** 不再是简单的“多个 LLM 并行聊天”，而是一个**完全可视化、自适应 ReAct 数字团队** —— 完美对齐经典 ReAct 架构图，同时具备群体智能、动态规划、生产级 WebUI 和飞书深度集成。
@@ -239,7 +239,7 @@ No GPU required. Model caching automatic. OpenSandbox optional (auto fallback).
 
 ### ✨ 核心特性
 
-**1. 🧭 显式 ReAct 思考过程（架构图 100% 对齐）** ★ **2026 可视化核心**  
+**1. 🧭 显式 ReAct 思考过程（架构图 100% 对齐）** 
 - 每条 Agent 回复**必须**以以下格式开头：  
   `Thinking:`（原因分析）  
   `Action:`（调用工具名称或 Final Answer）  
@@ -252,7 +252,7 @@ No GPU required. Model caching automatic. OpenSandbox optional (auto fallback).
 - 完美闭合架构图“更新prompt”循环  
 - 所有 Agent 始终对齐最新规划。
 
-**3. 🧭 Intelligent Routing（智能任务路由）** ★ 2026 旗舰特性  
+**3. 🧭 Intelligent Routing（智能任务路由）** ★ 旗舰特性  
 - 自动判断 Simple / Medium / Complex  
 - 规则 + LLM 双重判断 + 自动降级
 
