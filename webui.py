@@ -1087,63 +1087,201 @@ def start_email_poller(config: dict):
             traceback.print_exc()
             return []
 
+    # def send_reply(to: str, subject: str, body: str, original_date: str = "", attachments: List[str] = None):
+    #     """发送专业HTML邮件 - Markdown自动美化（最小改动核心修复）"""
+    #     try:
+    #         msg = MIMEMultipart('alternative')  # ← 关键：改成 alternative（同时支持纯文本+HTML）
+    #
+    #         msg['From'] = formataddr((Header("MultiAgentSwarm AI", 'utf-8').encode(), config['imap_user']))
+    #         msg['To'] = to
+    #         msg['Subject'] = Header(subject, 'utf-8')
+    #
+    #         # 纯文本版本（兼容纯文本客户端）
+    #         plain_text = re.sub(r'\*\*|\#+\s|\`|\[.*?\]\(.*?\)', '', body)[:2500]
+    #         plain_text = re.sub(r'\n{3,}', '\n\n', plain_text)
+    #
+    #         # Markdown → 美观 HTML（核心）
+    #         try:
+    #             # 使用 'extra' 元扩展（官方推荐），自动包含 tables + fenced_code + nl2br 等
+    #             # 彻底解决“table module”找不到的问题
+    #             html_content = markdown.markdown(
+    #                 body,
+    #                 extensions=['extra', 'attr_list', 'tables', 'fenced_code']
+    #             )
+    #         except Exception as e:
+    #             print(f"⚠️ Markdown 转换失败，使用纯文本兜底: {e}")
+    #             html_content = body.replace('\n', '<br>')
+    #
+    #         full_html = f"""
+    #         <!DOCTYPE html>
+    #         <html>
+    #         <head>
+    #             <meta charset="utf-8">
+    #             <style>
+    #                 body {{ font-family: Arial, "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    #                        line-height: 1.7; color: #333; max-width: 720px; margin: 0 auto; padding: 20px; }}
+    #                 h1 {{ color: #1e88e5; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
+    #                 h2 {{ color: #1976d2; margin-top: 28px; }}
+    #                 h3 {{ color: #1565c0; }}
+    #                 ul, ol {{ padding-left: 28px; }}
+    #                 li {{ margin: 6px 0; }}
+    #                 pre {{ background: #f5f7f9; padding: 14px; border-radius: 8px; overflow-x: auto; border: 1px solid #e0e0e0; }}
+    #                 code {{ font-family: Consolas, monospace; background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }}
+    #                 blockquote {{ border-left: 5px solid #ddd; padding-left: 18px; color: #555; margin: 20px 0; }}
+    #                 hr {{ border: none; border-top: 1px solid #eee; margin: 30px 0; }}
+    #             </style>
+    #         </head>
+    #         <body>
+    #             {html_content}
+    #             <hr>
+    #             <p style="color:#666; font-size:13px;">本邮件由 MultiAgentSwarm AI 系统自动生成</p>
+    #         </body>
+    #         </html>
+    #         """
+    #
+    #         # 附加两个版本（标准做法，优先显示HTML）
+    #         msg.attach(MIMEText(plain_text, 'plain', 'utf-8'))
+    #         msg.attach(MIMEText(full_html, 'html', 'utf-8'))
+    #
+    #         # 附件处理（完全保持原逻辑）
+    #         if attachments:
+    #             from email.mime.base import MIMEBase
+    #             from email import encoders
+    #             for file_path in attachments:
+    #                 try:
+    #                     if os.path.exists(file_path):
+    #                         with open(file_path, 'rb') as f:
+    #                             part = MIMEBase('application', 'octet-stream')
+    #                             part.set_payload(f.read())
+    #                             encoders.encode_base64(part)
+    #                             filename = os.path.basename(file_path)
+    #                             part.add_header('Content-Disposition',
+    #                                             f'attachment; filename="{Header(filename, "utf-8").encode()}"')
+    #                             msg.attach(part)
+    #                 except Exception as e:
+    #                     print(f"⚠️ 附件添加失败 {file_path}: {e}")
+    #
+    #         # 发送逻辑（完全不变）
+    #         port = config.get("smtp_port", 465)
+    #         if port == 465:
+    #             server = smtplib.SMTP_SSL(config["smtp_server"], port)
+    #         else:
+    #             server = smtplib.SMTP(config["smtp_server"], port)
+    #             server.starttls()
+    #         server.login(config["imap_user"], config["imap_pass"])
+    #         server.send_message(msg)
+    #         server.quit()
+    #
+    #         print(f"✅ 专业HTML邮件已发送 → {to}")
+    #         return True
+    #
+    #     except Exception as e:
+    #         print(f"❌ 邮件发送失败: {e}")
+    #         import traceback
+    #         traceback.print_exc()
+    #         return False
+
     def send_reply(to: str, subject: str, body: str, original_date: str = "", attachments: List[str] = None):
-        """发送专业HTML邮件 - Markdown自动美化（最小改动核心修复）"""
+        """发送专业HTML邮件 - Markdown自动美化（已优化版）"""
         try:
-            msg = MIMEMultipart('alternative')  # ← 关键：改成 alternative（同时支持纯文本+HTML）
+            msg = MIMEMultipart('alternative')
 
             msg['From'] = formataddr((Header("MultiAgentSwarm AI", 'utf-8').encode(), config['imap_user']))
             msg['To'] = to
             msg['Subject'] = Header(subject, 'utf-8')
 
-            # 纯文本版本（兼容纯文本客户端）
+            # ==================== 纯文本版本（兼容纯文本客户端） ====================
             plain_text = re.sub(r'\*\*|\#+\s|\`|\[.*?\]\(.*?\)', '', body)[:2500]
             plain_text = re.sub(r'\n{3,}', '\n\n', plain_text)
 
-            # Markdown → 美观 HTML（核心）
+            # ==================== Markdown → 专业HTML（核心优化） ====================
             try:
-                # 使用 'extra' 元扩展（官方推荐），自动包含 tables + fenced_code + nl2br 等
-                # 彻底解决“table module”找不到的问题
                 html_content = markdown.markdown(
                     body,
-                    extensions=['extra', 'attr_list']
+                    extensions=[
+                        'extra',  # tables, fenced_code, nl2br 等
+                        'attr_list',
+                        'tables',  # 明确支持表格
+                        'fenced_code'  # 代码块高亮支持
+                    ]
                 )
+                print("✅ Markdown 已成功转为专业HTML（含表格+代码块）")
             except Exception as e:
                 print(f"⚠️ Markdown 转换失败，使用纯文本兜底: {e}")
                 html_content = body.replace('\n', '<br>')
 
+            # ==================== 美观HTML模板（已增强表格样式） ====================
             full_html = f"""
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="utf-8">
                 <style>
-                    body {{ font-family: Arial, "Helvetica Neue", "Microsoft YaHei", sans-serif; 
-                           line-height: 1.7; color: #333; max-width: 720px; margin: 0 auto; padding: 20px; }}
-                    h1 {{ color: #1e88e5; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
-                    h2 {{ color: #1976d2; margin-top: 28px; }}
-                    h3 {{ color: #1565c0; }}
-                    ul, ol {{ padding-left: 28px; }}
-                    li {{ margin: 6px 0; }}
-                    pre {{ background: #f5f7f9; padding: 14px; border-radius: 8px; overflow-x: auto; border: 1px solid #e0e0e0; }}
-                    code {{ font-family: Consolas, monospace; background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }}
-                    blockquote {{ border-left: 5px solid #ddd; padding-left: 18px; color: #555; margin: 20px 0; }}
-                    hr {{ border: none; border-top: 1px solid #eee; margin: 30px 0; }}
+                    body {{ 
+                        font-family: Arial, "Helvetica Neue", "Microsoft YaHei", sans-serif; 
+                        line-height: 1.75; 
+                        color: #333; 
+                        max-width: 780px; 
+                        margin: 0 auto; 
+                        padding: 30px 20px; 
+                        background: #f9f9f9;
+                    }}
+                    h1, h2, h3 {{ color: #1e88e5; }}
+                    h1 {{ border-bottom: 3px solid #eee; padding-bottom: 12px; }}
+                    h2 {{ margin-top: 32px; color: #1976d2; }}
+                    table {{ 
+                        border-collapse: collapse; 
+                        width: 100%; 
+                        margin: 20px 0; 
+                        background: white;
+                    }}
+                    th, td {{ 
+                        border: 1px solid #ddd; 
+                        padding: 12px 15px; 
+                        text-align: left;
+                    }}
+                    th {{ background: #f0f7ff; font-weight: 600; }}
+                    tr:nth-child(even) {{ background: #f8f9fa; }}
+                    pre {{ 
+                        background: #f5f7f9; 
+                        padding: 16px; 
+                        border-radius: 8px; 
+                        overflow-x: auto; 
+                        border: 1px solid #e0e0e0;
+                        font-family: Consolas, monospace;
+                    }}
+                    code {{ 
+                        font-family: Consolas, monospace; 
+                        background: #f0f0f0; 
+                        padding: 2px 6px; 
+                        border-radius: 4px; 
+                    }}
+                    blockquote {{ 
+                        border-left: 5px solid #1e88e5; 
+                        padding-left: 20px; 
+                        color: #555; 
+                        margin: 24px 0;
+                    }}
+                    hr {{ border: none; border-top: 2px solid #eee; margin: 35px 0; }}
+                    .footer {{ color:#666; font-size:13px; text-align:center; margin-top:40px; }}
                 </style>
             </head>
             <body>
                 {html_content}
                 <hr>
-                <p style="color:#666; font-size:13px;">本邮件由 MultiAgentSwarm AI 系统自动生成</p>
+                <div class="footer">
+                    本邮件由 MultiAgentSwarm AI 系统自动生成<br>
+                    如有任何疑问，请直接回复此邮件
+                </div>
             </body>
             </html>
             """
 
-            # 附加两个版本（标准做法，优先显示HTML）
+            # 附加纯文本 + HTML（标准 alternative 格式）
             msg.attach(MIMEText(plain_text, 'plain', 'utf-8'))
             msg.attach(MIMEText(full_html, 'html', 'utf-8'))
 
-            # 附件处理（完全保持原逻辑）
+            # ==================== 附件处理（完全保持原逻辑） ====================
             if attachments:
                 from email.mime.base import MIMEBase
                 from email import encoders
@@ -1158,21 +1296,23 @@ def start_email_poller(config: dict):
                                 part.add_header('Content-Disposition',
                                                 f'attachment; filename="{Header(filename, "utf-8").encode()}"')
                                 msg.attach(part)
+                            print(f"📎 已附加文件: {filename}")
                     except Exception as e:
                         print(f"⚠️ 附件添加失败 {file_path}: {e}")
 
-            # 发送逻辑（完全不变）
+            # ==================== 发送逻辑 ====================
             port = config.get("smtp_port", 465)
             if port == 465:
                 server = smtplib.SMTP_SSL(config["smtp_server"], port)
             else:
                 server = smtplib.SMTP(config["smtp_server"], port)
                 server.starttls()
+
             server.login(config["imap_user"], config["imap_pass"])
             server.send_message(msg)
             server.quit()
 
-            print(f"✅ 专业HTML邮件已发送 → {to}")
+            print(f"✅ 专业美化邮件已成功发送 → {to}")
             return True
 
         except Exception as e:
