@@ -120,6 +120,9 @@ uv pip install -r requirements.txt
 **Via EMAIL**
 - Configure email information in the configuration file.
 - Send an email to the recipient's address (using the predefined subject).
+
+---
+
 **CLI test**: `python multi_agent_swarm_v3.py`
 ---
 
