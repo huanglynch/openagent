@@ -126,7 +126,7 @@ def ut_engine(
 - Java: `mvn test` 或直接运行 JUnit
 - C#: `dotnet test`
 
-**下一步**：我将调用 write_file 工具为你生成可下载文件 `{filename}`（带日期戳）
+**下一步**：请 Grok 或 Lucas 调用 write_file 工具生成可下载文件 `{filename}`（带日期戳）
 """
     elif action == "debug":
         return f"""🐛 **{lang_name} Debug 模式已激活**
