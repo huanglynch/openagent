@@ -701,7 +701,8 @@ class Agent:
             force_non_stream: bool = False,
             critique_previous: bool = False,
             stream_callback=None,
-            log_callback=None
+            log_callback=None,
+            direct_user_answer: bool = False
     ) -> str:
         """
         生成 Agent 响应（增强版：工具调用超限兜底）
@@ -741,27 +742,38 @@ class Agent:
             ""
         )[:300]
 
-        # 构建系统提示词（Plan 摘要放在最前面，让所有 Agent 对齐）
+        if direct_user_answer:
+            format_instruction = (
+                "【最高优先级指令 - 覆盖之前所有格式要求】\n"
+                "这是**直接给最终用户阅读的答案**！\n"
+                "请**彻底忽略**任何 Thinking、Action、Phase、JSON、ReAct 格式。\n"
+                "直接用自然、流畅、专业、美观的 Markdown 输出（标题、列表、粗体、引用、表情均可）。\n"
+                "从正文开始回答，不要任何内部标签或思考过程。\n"
+                "目标：让用户获得最佳阅读体验。\n\n"
+            )
+        else:
+            format_instruction = (
+                "【强制思考格式 - 必须严格遵守】\n"
+                "无论是否调用工具，都请在回复最开头先按以下格式输出：\n"
+                "Thinking: （怎么解决用户的问题，原因分析）\n"
+                "Action: （需要调用的 Function 名称，或写 Final Answer）\n"
+                "Action Input: （Function 的参数JSON，或最终答案摘要）\n\n"
+                "示例：\n"
+                "Thinking: 用户问 Transformer 注意力机制，我需要先回忆原理再查最新进展。\n"
+                "Action: web_search\n"
+                "Action Input: {\"query\": \"Transformer attention mechanism latest\"}\n\n"
+                "用户和前端会直接看到这个思考过程，提升透明度和调试能力。\n"
+                "必须在 Thinking 开头显式写「Phase X: ...」引用Master Plan当前阶段，否则视为违规。\n\n"
+            )
+
+            # 构建 system_prompt（保持原有逻辑，只替换 ReAct 部分）
         system_prompt = (
             f"{self.role}\n"
             f"【当前Master Plan摘要】\n{plan_summary}\n\n"
             f"{self.shared_knowledge}\n"
             f"{system_extra}\n"
             "你是多智能体协作团队的一员，请提供有价值、准确、有深度的贡献。\n\n"
-
-            # ==================== 【新增】强制 ReAct 三段式（对应架构图） ====================
-            "【强制思考格式 - 必须严格遵守】\n"
-            "无论是否调用工具，都请在回复最开头先按以下格式输出：\n"
-            "Thinking: （怎么解决用户的问题，原因分析）\n"
-            "Action: （需要调用的 Function 名称，或写 Final Answer）\n"
-            "Action Input: （Function 的参数JSON，或最终答案摘要）\n\n"
-            "示例：\n"
-            "Thinking: 用户问 Transformer 注意力机制，我需要先回忆原理再查最新进展。\n"
-            "Action: web_search\n"
-            "Action Input: {\"query\": \"Transformer attention mechanism latest\"}\n\n"
-            "用户和前端会直接看到这个思考过程，提升透明度和调试能力。\n"
-            "必须在 Thinking 开头显式写「Phase X: ...」引用Master Plan当前阶段，否则视为违规。\n\n"
-            # =============================================================================
+            f"{format_instruction}"
         )
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -2145,7 +2157,8 @@ class MultiAgentSwarm:
             ),
             force_non_stream=False,
             stream_callback=stream_callback,
-            log_callback=log_callback
+            log_callback=log_callback,
+            direct_user_answer=True
         )
 
         return answer
