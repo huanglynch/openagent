@@ -113,9 +113,18 @@ uv pip install -r requirements.txt
 **Recommended: Start with OpenSandbox** (hard isolation)  
 **WebUI (recommended)**: `python webui.py` → http://localhost:8060
 
+---
+
+**Via EMAIL**
+
+- Configure email information in the configuration file.
+- Send an email to the recipient's address (using the predefined subject).
+---
+
 **CLI test**: `python multi_agent_swarm_v3.py`
 
 ---
+
 
 ### 📋 Flexible Configuration (One YAML to Rule Them All)
 
@@ -306,6 +315,11 @@ opensandbox-server
 python webui.py
 ```
 访问 → **http://localhost:8060**
+
+**通过 EMAIL**  
+- 在配置文件中配置邮箱信息
+- 发送邮件到收信邮件地址（使用设定好的标题）
+
 
 **CLI 测试**  
 ```bash
