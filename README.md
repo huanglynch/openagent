@@ -111,7 +111,12 @@ uv pip install -r requirements.txt
 ```
 
 **Recommended: Start with OpenSandbox** (hard isolation)  
+
+---
+
 **WebUI (recommended)**: `python webui.py` → http://localhost:8060
+
+---
 **Via EMAIL**
 - Configure email information in the configuration file.
 - Send an email to the recipient's address (using the predefined subject).
