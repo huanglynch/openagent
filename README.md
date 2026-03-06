@@ -19,19 +19,31 @@
 
 ## English Version <a id="english-version"></a>
 
-**MultiAgentSwarm v3.2.0** is a **fully visible, self-adaptive ReAct Digital Team** that perfectly implements the classic ReAct architecture while adding group intelligence, dynamic planning, lifelong memory, and production-ready features.
+**MultiAgentSwarm v4.1.0**  
+**A fully visible, self-evolving ReAct Digital Team** that intelligently decides *when to be fast* and *when to go deep*.
 
-### Core Philosophy (First-Principles)
+### Core Philosophy (First Principles)
 
-We rejected the “throw everything at every task” approach.  
-Instead we built a system that **knows when to be fast and when to be deep**.
+We rejected the “use everything on every task” anti-pattern.  
+Instead, we built a swarm that **knows itself** — automatically choosing the right level of intelligence for each request.
 
-Result: **The only swarm that**:
-- Automatically routes tasks: **Simple / Medium / Balanced / Complex**
-- Forces **visible ReAct thinking** in **every agent response**
-- Uses **exactly 3 core agents** in Balanced mode (optimal quality/speed)
-- Keeps **lifelong PrimalMemory** with automatic decay
-- Ships **production WebUI + Feishu long-connection + smart file delivery**
+This is **the only swarm that**:
+- **Intelligently routes** every task: Simple / Medium / Balanced / Complex
+- **Forces visible ReAct thinking** in every single agent response
+- Delivers **Balanced mode** as the default sweet spot (3 agents, planning + tools, best quality/speed ratio)
+- Runs **Tree-of-Thoughts** with 3 concurrent exploration branches
+- Spawns **Dynamic Agents** on-the-fly with true parallel subtask execution (Hierarchical Supervisor)
+- Maintains **lifelong hierarchical memory** (PrimalMemory + Vector + Knowledge Graph) with automatic decay & distillation
+- Performs **all self-evolution completely in the background** (Auto-Eval + Active Distillation + memory persistence) — **zero freezing after answer delivery**
+- Generates & validates **Master Plan** with Benjamin review pass + dynamic refresh
+- Supports **instant task cancellation**, streaming output, smart image compression, and tool overrun friendly fallback
+- Ships production-ready: **WebUI + Feishu long-polling + Email integration + smart file delivery**
+
+### Result
+
+A local swarm that feels like a real team:  
+**Fast when you need speed. Deep when you need excellence. Never makes you wait.**
+
 
 ---
 
@@ -189,27 +201,35 @@ No GPU required. Model caching automatic. OpenSandbox optional (auto fallback).
 ## 中文版 <a id="chinese-version"></a>
 
 **MultiAgentSwarm WebUI**  
-**一个真正看得见Agent“思考”的自适应数字团队**
+**一个真正看得见Agent思考的自适应数字团队**
 
-**MultiAgentSwarm v3.2.0** 不再是简单的“多个 LLM 并行聊天”，而是一个**完全可视化、自适应 ReAct 数字团队** —— 完美对齐经典 ReAct 架构图，同时具备群体智能、动态规划、生产级 WebUI 和飞书深度集成。
+**MultiAgentSwarm v4.1.0** 不再是简单的“多个LLM并行聊天”，而是一个**完全可视化、智能决策、自进化 ReAct 数字团队** —— 它完美还原经典 ReAct 架构，同时注入群体智能、动态规划、分层终身记忆与生产级交付能力。
 
 ### 我们为什么要做这个项目（第一性原理）
 
-市面上的多智能体框架（AutoGen、CrewAI、LangGraph、MetaGPT）都遵循同一个套路：  
-**“不管什么任务都扔全部Agent上去 → 烧钱 → 祈祷出好结果”**
+市面上的多智能体框架大多采用同一种粗暴思路：  
+**“不管什么任务都把所有Agent扔上去 → 大量烧token → 祈祷出好结果”**
 
-我们从零开始，基于两个公理重构：
+我们从第一性原理出发，基于两个核心公理重新构建：
 
-1. **智能 ≠ 更多Agent**，智能 = **知道什么时候用Agent、辩论多深、记住什么**。
-2. **高质量不能以浪费为代价**。每一个token都必须被证明值得花。
+1. **真正的智能不是用更多Agent，而是知道什么时候该快、什么时候该深、该并行什么、该记住什么**。
+2. **高质量绝不能以让用户等待为代价** —— 答案必须即时呈现，所有自进化过程必须完全后台异步完成。
 
-成果：**MultiAgentSwarm v3** —— 唯一做到以下全部的框架：
-- 自动判断任务复杂度（简单/中等/复杂）
-- 动态切换模式（1秒 vs 10秒 vs 40秒+）
-- 仅在必要时启动对抗辩论 + 元批评
-- 终身记忆 + 自动衰退机制
-- **强制ReAct透明思考**（每个Agent都先输出Thinking/Action）
-- 开箱即用的WebUI + 飞书长连接
+**成果：MultiAgentSwarm v4.1.0** —— 目前唯一同时做到以下全部特性的本地多智能体系统：
+
+- **智能任务路由**：自动判断并切换 Simple / Medium / Balanced / Complex 四种模式
+- **Balanced 甜点模式**：默认最优选择（规划 + 工具 + 轻量反思，质量接近 Complex，速度接近 Medium）
+- **Tree-of-Thoughts 多分支并行探索**：3条思考路径同时推进
+- **动态Agent工厂 + Hierarchical Supervisor**：真正并行执行子任务（按需生成专家并发工作）
+- **强制可见 ReAct 思考**：每个Agent都必须先输出 Thinking → Action（完全透明）
+- **分层终身记忆系统**：PrimalMemory + Vector + Knowledge Graph + 自动衰退与蒸馏
+- **完全异步后台自进化**：答案显示后立即可用，记忆保存、Auto-Eval、Active Distillation 全在后台运行（**零冻结**）
+- **Master Plan 生成 + Benjamin 验证**：动态规划 + 严格审查 + 实时刷新
+- **生产级集成**：开箱即用的 WebUI + 飞书长连接 + 邮件智能回复 + 智能文件生成与下载
+
+**一句话总结**：  
+这是一个**看得见思考、懂得节制、持续进化**的本地数字团队 —— 既能秒回简单问题，也能高质量完成复杂报告，还永远不会让你等后台处理。
+
 
 ---
 
@@ -232,10 +252,16 @@ No GPU required. Model caching automatic. OpenSandbox optional (auto fallback).
 ---
 
 **核心升级**：
+核心特性：
+- 智能任务路由（Simple / Medium / Balanced / Complex）+ Balanced甜点模式
+- Tree-of-Thoughts 多分支并行探索（3 Agent 并发）
+- 动态 Agent 工厂 + Hierarchical Supervisor 真正并行子任务执行
+- 分层记忆系统（PrimalMemory + Vector + Knowledge Graph）
+- 完全异步后台处理（记忆保存 + Auto-Eval + Active Distillation + 无任何冻结）
+- Master Plan 生成 + Benjamin 验证 Pass + 动态刷新
+- 任务取消支持 + 流式输出 + 图片智能压缩 + 工具超限友好兜底
 - Balanced 模式**严格锁定 3 个 Agent**（Grok + Harper + Benjamin）——质量与速度最佳平衡点
 - 所有 Agent 强制输出 ReAct 三段式思考过程（实时可见）
-- Master Plan + Benjamin 审查 + 动态刷新闭环
-- 彻底清理测试残留
 - WebUI 完整流式 + 文件智能生成下载 + 飞书长连接 👍
 
 ### ✨ 核心特性

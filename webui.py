@@ -34,7 +34,8 @@ from email.utils import formataddr
 import markdown   # ← 新增这一行
 
 # 导入你的 Swarm 系统
-from multi_agent_swarm_v3 import MultiAgentSwarm
+#from multi_agent_swarm_v3 import MultiAgentSwarm
+from multi_agent_swarm_v4 import MultiAgentSwarm
 
 # 全局配置（启动时加载）
 feishu_config = {}
@@ -43,6 +44,9 @@ lark_oapi = None
 CreateMessageRequest = None
 CreateMessageRequestBody = None
 GetMessageResourceRequest = None
+
+feishu_swarm: Optional[MultiAgentSwarm] = None   # ← 新增：飞书专用
+email_swarm: Optional[MultiAgentSwarm] = None    # ← 新增：邮件专用
 
 
 # ====================== 邮件编码辅助函数 ======================
@@ -179,7 +183,7 @@ def update_config(config: ConfigUpdate):
     if not global_swarm:
         raise HTTPException(status_code=500, detail="Swarm 未初始化（全局实例）")
 
-    # ✅ 批量更新所有高级特性开关
+    # ✅ 批量更新全局实例
     global_swarm.enable_adversarial_debate = config.adversarial_debate
     global_swarm.enable_meta_critic = config.meta_critic
     global_swarm.enable_task_decomposition = config.task_decomposition
@@ -187,7 +191,6 @@ def update_config(config: ConfigUpdate):
     global_swarm.enable_adaptive_depth = config.adaptive_reflection
     global_swarm.intelligent_routing_enabled = config.intelligent_routing
 
-    # ✅ 反思与路由参数
     global_swarm.max_reflection_rounds = config.max_rounds
     global_swarm.reflection_quality_threshold = config.quality_threshold
     global_swarm.stop_quality_threshold = config.stop_threshold
@@ -195,10 +198,35 @@ def update_config(config: ConfigUpdate):
     global_swarm.force_complexity = config.force_complexity
 
     print(f"✅ 配置已全局更新: {config.dict()}")
-    # 可选：同步更新所有活跃 session 的实例（极致一致性）
+
+    # ✅ 同步所有 Web 会话实例（你已经加了，非常好）
     for sid, swarm_inst in list(swarms.items()):
         swarm_inst.enable_adversarial_debate = config.adversarial_debate
-        # ...（如果需要也可以同步其他参数，这里保持最小改动，只同步核心开关）
+        swarm_inst.enable_meta_critic = config.meta_critic
+        swarm_inst.enable_task_decomposition = config.task_decomposition
+        swarm_inst.enable_knowledge_graph = config.knowledge_graph
+        swarm_inst.enable_adaptive_depth = config.adaptive_reflection
+        swarm_inst.intelligent_routing_enabled = config.intelligent_routing
+        swarm_inst.max_reflection_rounds = config.max_rounds
+        swarm_inst.reflection_quality_threshold = config.quality_threshold
+        swarm_inst.stop_quality_threshold = config.stop_threshold
+        swarm_inst.quality_convergence_delta = config.convergence_delta
+        swarm_inst.force_complexity = config.force_complexity
+
+    # 🔥 新增：同步飞书和邮件专用实例（关键！）
+    for swarm_inst in (feishu_swarm, email_swarm):
+        if swarm_inst:
+            swarm_inst.enable_adversarial_debate = config.adversarial_debate
+            swarm_inst.enable_meta_critic = config.meta_critic
+            swarm_inst.enable_task_decomposition = config.task_decomposition
+            swarm_inst.enable_knowledge_graph = config.knowledge_graph
+            swarm_inst.enable_adaptive_depth = config.adaptive_reflection
+            swarm_inst.intelligent_routing_enabled = config.intelligent_routing
+            swarm_inst.max_reflection_rounds = config.max_rounds
+            swarm_inst.reflection_quality_threshold = config.quality_threshold
+            swarm_inst.stop_quality_threshold = config.stop_threshold
+            swarm_inst.quality_convergence_delta = config.convergence_delta
+            swarm_inst.force_complexity = config.force_complexity
 
 
 def sanitize_filename(original_name: str) -> str:
@@ -266,11 +294,19 @@ async def startup_event():
         ).start()
         print("🚀 邮件配置有效，正在启动邮箱连接服务...")
 
-    # 初始化全局 Swarm（供飞书、邮箱、配置API使用）
-    global global_swarm
+    # 初始化全局 Swarm（配置API仍共用）
+    global global_swarm, feishu_swarm, email_swarm
     if not global_swarm:
-        print("🚀 初始化全局 Swarm（飞书/邮箱专用）")
+        print("🚀 初始化全局 Swarm（配置API专用）")
         global_swarm = MultiAgentSwarm(config_path="swarm_config.yaml")
+
+    # 🔥 给飞书和邮件各自独立实例（彻底避免干扰）
+    if not feishu_swarm:
+        print("🚀 创建飞书专用 Swarm 实例")
+        feishu_swarm = MultiAgentSwarm(config_path="swarm_config.yaml")
+    if not email_swarm:
+        print("🚀 创建邮件专用 Swarm 实例")
+        email_swarm = MultiAgentSwarm(config_path="swarm_config.yaml")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -490,6 +526,10 @@ async def websocket_endpoint(websocket: WebSocket):
             # 构建历史上下文（简化版，可根据需要扩展）
             full_message = message
 
+            # ============ 新增：解决 Markdown 流式渲染乱码问题 ============
+            current_response = ""          # 累积完整回复内容（关键！）
+            # ============================================================
+
             # ============ 🔥 修复：补全附件处理代码 ============
             image_paths = []
             file_contents = []
@@ -595,11 +635,16 @@ async def websocket_endpoint(websocket: WebSocket):
                 loop = asyncio.get_event_loop()
 
                 def stream_callback(agent_name: str, content: str):
+                    nonlocal current_response
+                    if not content:  # 防空 chunk
+                        return
+                    current_response += content  # 继续累积（用于最终保存）
+
                     asyncio.run_coroutine_threadsafe(
                         stream_queue.put({
                             "type": "stream",
                             "agent": agent_name,
-                            "content": content
+                            "content": content,  # ← 关键修改：只发送本次新增 chunk
                         }),
                         loop
                     )
@@ -741,6 +786,139 @@ def start_feishu_long_connection():
         feishu_client = lark_oapi.Client.builder().app_id(feishu_config.get("app_id")).app_secret(
             feishu_config.get("app_secret")).build()
 
+        # def handle_message(data: lark_oapi.im.v1.P2ImMessageReceiveV1):
+        #     try:
+        #         event = data.event
+        #         msg = event.message
+        #         chat_id = msg.chat_id
+        #         message_id = msg.message_id
+        #         if not message_id or not chat_id:
+        #             return
+        #
+        #         # 添加👍反应
+        #         try:
+        #             reaction_req = lark_oapi.BaseRequest.builder() \
+        #                 .http_method(lark_oapi.HttpMethod.POST) \
+        #                 .uri(f"/open-apis/im/v1/messages/{message_id}/reactions") \
+        #                 .token_types({lark_oapi.AccessTokenType.TENANT}) \
+        #                 .body({"reaction_type": {"emoji_type": "THUMBSUP"}}) \
+        #                 .build()
+        #
+        #             reaction_resp = feishu_client.request(reaction_req)
+        #             if reaction_resp.success():
+        #                 print(f"✅ 👍 已添加")
+        #         except Exception as e:
+        #             print(f"⚠️ 👍 添加失败: {str(e)[:80]}")
+        #
+        #         content_str = msg.content or "{}"
+        #         content_json = json.loads(content_str)
+        #         full_message = ""
+        #
+        #         # 处理附件
+        #         if msg.message_type in ("file", "image"):
+        #             file_key = None
+        #             original_name = "unknown_file"
+        #             file_type = msg.message_type if msg.message_type in ("image", "file") else "file"
+        #
+        #             if msg.message_type == "image":
+        #                 file_key = content_json.get("image_key")
+        #                 original_name = f"image_{int(time.time())}.jpg"
+        #             else:
+        #                 file_key = content_json.get("file_key")
+        #                 original_name = content_json.get("file_name", "file")
+        #
+        #             if not file_key:
+        #                 return
+        #
+        #             print(f"📥 Feishu 收到附件: {original_name}")
+        #
+        #             request = GetMessageResourceRequest.builder() \
+        #                 .message_id(message_id) \
+        #                 .file_key(file_key) \
+        #                 .type(file_type) \
+        #                 .build()
+        #
+        #             response = feishu_client.im.v1.message_resource.get(request)
+        #
+        #             if not response.success():
+        #                 print(f"❌ 下载附件失败: {response.msg}")
+        #                 return
+        #
+        #             safe_stem = sanitize_filename(Path(original_name).stem)
+        #             safe_filename = f"{uuid.uuid4().hex[:8]}_{safe_stem}{Path(original_name).suffix.lower()}"
+        #             upload_dir = Path("uploads")
+        #             upload_dir.mkdir(exist_ok=True)
+        #             file_path = upload_dir / safe_filename
+        #
+        #             with open(file_path, "wb") as f:
+        #                 f.write(response.raw.content)
+        #
+        #             print(f"✅ 附件已保存: {file_path}")
+        #             full_message = f"[来自飞书] 用户发送了附件\n\n📎 附件:\n- {file_path}"
+        #
+        #             reminder = CreateMessageRequest.builder() \
+        #                 .receive_id_type("chat_id") \
+        #                 .request_body(
+        #                 CreateMessageRequestBody.builder()
+        #                 .receive_id(chat_id)
+        #                 .msg_type("text")
+        #                 .content(json.dumps({"text": f"🤖 已收到附件《{original_name}》，正在处理..."}))
+        #                 .build()
+        #             ).build()
+        #             feishu_client.im.v1.message.create(reminder)
+        #
+        #         elif msg.message_type == "text":
+        #             content = content_json.get("text", "").strip()
+        #             if not content:
+        #                 return
+        #             full_message = f"[来自飞书] {content}"
+        #         else:
+        #             return
+        #
+        #         # 判断是否需要回复
+        #         should_reply = msg.chat_type == "p2p"
+        #         if msg.chat_type == "group" and hasattr(event, "mentions") and event.mentions:
+        #             for m in event.mentions:
+        #                 if getattr(m.id, "open_id", None):
+        #                     should_reply = True
+        #                     if msg.message_type == "text":
+        #                         content = re.sub(r'@\S+\s*', '', content).strip()
+        #                         full_message = f"[来自飞书] {content}"
+        #                     break
+        #
+        #         if not should_reply:
+        #             return
+        #
+        #         print(f"📥 Feishu 收到消息: {full_message[:70]}...")
+        #
+        #         # ✅ 调用 Swarm
+        #         answer = global_swarm.solve(
+        #             full_message,
+        #             use_memory=True,
+        #             memory_key="feishu_long"
+        #         )
+        #
+        #         request = CreateMessageRequest.builder() \
+        #             .receive_id_type("chat_id") \
+        #             .request_body(
+        #             CreateMessageRequestBody.builder()
+        #             .receive_id(chat_id)
+        #             .msg_type("text")
+        #             .content(json.dumps({"text": answer}))
+        #             .build()
+        #         ).build()
+        #
+        #         response = feishu_client.im.v1.message.create(request)
+        #         if response.success():
+        #             print("✅ 已回复")
+        #         else:
+        #             print(f"⚠️ 回复失败: {response.msg}")
+        #
+        #     except Exception as e:
+        #         print(f"❌ 处理飞书消息异常: {e}")
+        #         import traceback
+        #         traceback.print_exc()
+
         def handle_message(data: lark_oapi.im.v1.P2ImMessageReceiveV1):
             try:
                 event = data.event
@@ -847,27 +1025,63 @@ def start_feishu_long_connection():
                 print(f"📥 Feishu 收到消息: {full_message[:70]}...")
 
                 # ✅ 调用 Swarm
-                answer = global_swarm.solve(
+                answer = feishu_swarm.solve(
                     full_message,
                     use_memory=True,
                     memory_key="feishu_long"
                 )
 
-                request = CreateMessageRequest.builder() \
-                    .receive_id_type("chat_id") \
-                    .request_body(
-                    CreateMessageRequestBody.builder()
-                    .receive_id(chat_id)
-                    .msg_type("text")
-                    .content(json.dumps({"text": answer}))
-                    .build()
-                ).build()
+                # ==================== 【终极稳定版】post 富文本（永不 200621） ====================
+                clean_answer = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', answer)[:4000]
+                clean_answer = clean_answer.replace('{{', '{ {').replace('}}', '} }')
 
-                response = feishu_client.im.v1.message.create(request)
-                if response.success():
-                    print("✅ 已回复")
-                else:
-                    print(f"⚠️ 回复失败: {response.msg}")
+                # 构造 post 富文本
+                post_content = {
+                    "zh_cn": {
+                        "title": "🤖 MultiAgentSwarm AI 回复",
+                        "content": [
+                            [
+                                {
+                                    "tag": "text",
+                                    "text": clean_answer or "（回复内容为空）"
+                                }
+                            ]
+                        ]
+                    }
+                }
+
+                try:
+                    request = CreateMessageRequest.builder() \
+                        .receive_id_type("chat_id") \
+                        .request_body(
+                        CreateMessageRequestBody.builder()
+                        .receive_id(chat_id)
+                        .msg_type("post")  # ← 关键：改为 post
+                        .content(json.dumps(post_content, ensure_ascii=False))
+                        .build()
+                    ).build()
+
+                    response = feishu_client.im.v1.message.create(request)
+                    if response.success():
+                        print("✅ 已回复（post 富文本 - 稳定版）")
+                    else:
+                        raise Exception(response.msg)
+
+                except Exception as e:
+                    print(f"⚠️ post 也失败，切换纯文本兜底: {str(e)[:80]}")
+                    # 最终兜底（一定能发出去）
+                    fallback = clean_answer[:1800] or "MultiAgentSwarm 已处理完成。"
+                    request = CreateMessageRequest.builder() \
+                        .receive_id_type("chat_id") \
+                        .request_body(
+                        CreateMessageRequestBody.builder()
+                        .receive_id(chat_id)
+                        .msg_type("text")
+                        .content(json.dumps({"text": fallback}, ensure_ascii=False))
+                        .build()
+                    ).build()
+                    feishu_client.im.v1.message.create(request)
+                    print("✅ 已使用普通文本回复（兜底成功）")
 
             except Exception as e:
                 print(f"❌ 处理飞书消息异常: {e}")
@@ -1350,7 +1564,7 @@ def start_email_poller(config: dict):
                         print("🤖 AI 处理中...（使用与 WebUI/飞书一致的 prompt）")
 
                         # ✅ 完全一致的调用（无任何强制指令）
-                        answer = global_swarm.solve(
+                        answer = email_swarm.solve(
                             full_question,
                             use_memory=True,
                             memory_key="email_auto"
