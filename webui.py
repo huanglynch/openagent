@@ -263,6 +263,30 @@ async def startup_event():
     global feishu_config
     with open("swarm_config.yaml", "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+
+    # 🔥 新增：解析环境变量占位符（最小改动点）
+    def resolve_env_placeholders(config_dict):
+        """递归替换 {env:VAR_NAME} 为环境变量值（支持所有字符串字段）"""
+        pattern = re.compile(r'^\{env:(\w+)\}$')  # 严格匹配 {env:XXX}
+        for key, value in config_dict.items():
+            if isinstance(value, dict):
+                resolve_env_placeholders(value)  # 递归子字典
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, dict):
+                        resolve_env_placeholders(item)
+            elif isinstance(value, str):
+                match = pattern.match(value)
+                if match:
+                    env_var = match.group(1)
+                    env_value = os.environ.get(env_var, '')  # 默认空，避免崩溃
+                    config_dict[key] = env_value
+                    if not env_value:
+                        print(f"⚠️ 环境变量 {env_var} 未设置，使用空值（Secret可能无效）")
+                    else:
+                        print(f"✅ 已从环境变量加载 {env_var}")
+
+    resolve_env_placeholders(cfg)  # 调用替换（针对整个配置）
     feishu_config = cfg.get("feishu", {})
 
     # 删除或注释掉这行（因为现在懒加载）：

@@ -54,6 +54,21 @@ import io
 from contextlib import contextmanager
 
 
+# ====================== 🔥 通用环境变量解析（升级版，支持任意字段） ======================
+def resolve_env_var(raw_value):
+    """支持 {env:VAR_NAME} 格式，从 OS 环境变量动态读取（安全 + 可热更新）"""
+    if isinstance(raw_value, str) and raw_value.startswith("{env:") and raw_value.endswith("}"):
+        var_name = raw_value[5:-1].strip()
+        value = os.getenv(var_name)
+        if value:
+            print(f"🔑 [安全加载] 从环境变量 {var_name} 读取值")
+            logging.info(f"🔑 已从环境变量 {var_name} 安全加载")
+            return value
+        logging.warning(f"⚠️ 环境变量 {var_name} 未设置！请 export {var_name}=xxx")
+        return None
+    return raw_value
+
+
 class TimeTracker:
     """时间统计工具类"""
 
@@ -661,8 +676,14 @@ class Agent:
         self.context_limit_k = context_limit_k  # ← 新增这一行，保存下来
 
         # OpenAI 客户端配置
+        # self.client = OpenAI(
+        #     api_key=config.get("api_key"),
+        #     base_url=config.get("base_url")
+        # )
+        # OpenAI 客户端配置 - 支持 {env:XXX} 安全读取（最小改动）
+        resolved_key = resolve_env_var(config.get("api_key"))
         self.client = OpenAI(
-            api_key=config.get("api_key"),
+            api_key=resolved_key,
             base_url=config.get("base_url")
         )
         self.model = config.get("model", default_model)
@@ -744,6 +765,7 @@ class Agent:
                 not force_non_stream and
                 not self.tools  # 有工具时暂时不用流式
         )
+        total_tokens_this_response = 0  # ← Token 累计
 
         # ✨ 批判模式增强
         if critique_previous and len(history) > 3:
@@ -834,6 +856,12 @@ class Agent:
                 tool_choice="auto" if self.tools else None,
                 stream=use_stream,
             )
+            # === Token 统计（官方 usage）===
+            if hasattr(response, 'usage') and response.usage:
+                p = getattr(response.usage, 'prompt_tokens', 0)
+                c = getattr(response.usage, 'completion_tokens', 0)
+                total_tokens_this_response += p + c
+                logging.info(f"🔢 [{self.name}] 本次调用 Token: {p+c} (P:{p} C:{c})")
 
             full_response = ""
 
@@ -911,6 +939,13 @@ class Agent:
                         tool_choice="auto" if self.tools else None,
                         stream=False
                     )
+                    # === Token 统计（官方 usage）===
+                    if hasattr(response, 'usage') and response.usage:
+                        p = getattr(response.usage, 'prompt_tokens', 0)
+                        c = getattr(response.usage, 'completion_tokens', 0)
+                        total_tokens_this_response += p + c
+                        logging.info(f"🔢 [{self.name}] 本次调用 Token: {p + c} (P:{p} C:{c})")
+
 
                     # ✅ 如果不再调用工具，提取最终答案并发送给前端
                     if not (hasattr(response.choices[0].message, 'tool_calls') and
@@ -986,6 +1021,15 @@ class Agent:
                 )
                 logging.warning(f"⚠️ {self.name} 未生成有效回复，使用兜底消息")
 
+            # ====================== 本次响应 Token 日志 ======================
+            if total_tokens_this_response > 0:
+                logging.info(f"📊 [{self.name}] 本次响应累计 Token: {total_tokens_this_response}")
+
+                # 🔥 关键修复：保存到 Agent 对象上，让 solve() 能汇总
+                if not hasattr(self, 'token_usage'):
+                    self.token_usage = {'total': 0}
+                self.token_usage['total'] += total_tokens_this_response
+            # ============================================================
             return full_response.strip()
 
         except Exception as e:
@@ -1191,6 +1235,11 @@ class MultiAgentSwarm:
         self.leader = self.agents[0]
         logging.info(f"👑 Leader: {self.leader.name}")
 
+        # ====================== 新增：自启动以来 Swarm 累计 Token ======================
+        self.total_tokens_since_startup = 0
+        logging.info("🚀 Swarm 已启动，累计 Token 清零")
+        # ========================================================================
+
         # ====================== ✨ 新增：Dynamic Agent Factory + Supervisor ======================
         self.temporary_agents: List[Agent] = []  # ← 新增这一行
         self.subtask_status: Dict = {}  # Supervisor 监控用
@@ -1200,7 +1249,7 @@ class MultiAgentSwarm:
         temp_config = {
             "name": f"Temp_{subtask.get('id', 0)}_{subtask.get('assigned_agent', 'Expert')}",
             "role": subtask.get("description", "专业子任务执行者"),
-            "api_key": self.agents[0].client.api_key,  # 复用Leader的key
+            "api_key": self.agents[0].client.api_key,   # ← 改成这行（已解析，无需重复调用 resolve_env_var）
             "base_url": self.agents[0].client.base_url,
             "model": self.default_model,
             "temperature": 0.7,
@@ -1789,6 +1838,23 @@ class MultiAgentSwarm:
 
         # 时间统计
         print(tracker.summary())
+        # ====================== 本次完整问答 Token 总数 ======================
+        total_all = sum(getattr(a, 'token_usage', {}).get('total', 0) for a in self.agents)  # 已有累计
+        for temp in getattr(self, 'temporary_agents', []):
+            total_all += getattr(temp, 'token_usage', {}).get('total', 0)
+        token_summary = f"✅ 【本次完整问答 Token 总消耗】 {total_all:,} tokens"
+        print(token_summary)
+        logging.info(token_summary)
+        if log_callback:
+            log_callback(token_summary)
+        # ====================== 新增：自启动以来 Swarm 累计 Token ======================
+        self.total_tokens_since_startup += total_all
+        cumulative_summary = f"📈 【自启动以来 Swarm 累计 Token 消耗】 {self.total_tokens_since_startup:,} tokens"
+        print(cumulative_summary)
+        logging.info(cumulative_summary)
+        if log_callback:
+            log_callback(cumulative_summary)
+        # ========================================================================
         logging.info(tracker.summary())
 
         # 🔥 新增：Auto-Eval + 可观测性
