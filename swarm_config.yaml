@@ -9,7 +9,7 @@ swarm:
   mode: "intelligent"                    # 运行模式: "fixed" 或 "intelligent"
   num_agents: 4                          # 使用的 Agent 数量
   max_concurrent_agents: 4               # 最大并发执行的 Agent 数量
-  max_rounds: 12                         # 最大讨论轮次
+  max_rounds: 10                        # 最大讨论轮次, 8-12
   max_tool_iterations: 10                 # 最大工具使用次数（推荐 6~10，8 是最佳平衡点）
 
   reflection_planning: true              # 是否启用反思机制
@@ -122,17 +122,17 @@ shared_knowledge: |
   - 最终必须调用 write_file 生成独立测试文件并给出下载链接 + 运行命令
 
 feishu:
-  enabled: true
-  app_id: "{env:MAS_APP_ID}"                  # 你的 App ID
-  app_secret: "{env:MAS_APP_SECRET}"   # ← 必须正确！
+  enabled: false
+  app_id: "{env:MAS_APP_ID}"
+  app_secret: "{env:MAS_APP_SECRET}"
 
 email:
   enabled: true
   imap_server: "imap.163.com"
-  imap_user: "{env:MAS_IMAP_USER}"          # ← 改成你的
-  imap_pass: "{env:MAS_IMAP_PASS}"   # ← 关键
+  imap_user: "{env:MAS_IMAP_USER}"
+  imap_pass: "{env:MAS_IMAP_PASS}"
   smtp_server: "smtp.163.com"
-  smtp_port: 465                          # 163必须用465（SSL）
+  smtp_port: 465
   check_interval: 60
   trigger_keywords: ["[AI]", "[Swarm]", "AI处理", "@swarm", "@Echo", "Echo", "艾克", "埃克", "艾可", "艾柯", "@AI", "AI ", "AI"]   # ← 新增这一行
 

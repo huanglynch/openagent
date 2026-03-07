@@ -716,6 +716,8 @@ class Agent:
             logging.info(f"🔧 {self.name} 调用工具: {func_name}({args})")
 
             result = self.tool_map[func_name](**args)
+            # 这一行可能影响工具的输出
+            result = str(result)[:3900] + "\n...(已截断)" if len(str(result)) > 3900 else str(result)  # ← 新增这行
 
             # ✅ 修复：role 必须是 'tool'（NVIDIA 兼容），但内容前缀【Observation】让前端和日志完美显示红色 Observation 效果
             return {
@@ -783,6 +785,7 @@ class Agent:
             ""
         )[:300]
 
+        # 先定义格式要求（无论哪一轮都必须保留）
         if direct_user_answer:
             format_instruction = (
                 "【最高优先级指令 - 覆盖之前所有格式要求】\n"
@@ -799,23 +802,28 @@ class Agent:
                 "Thinking: （怎么解决用户的问题，原因分析）\n"
                 "Action: （需要调用的 Function 名称，或写 Final Answer）\n"
                 "Action Input: （Function 的参数JSON，或最终答案摘要）\n\n"
-                "示例：\n"
-                "Thinking: 用户问 Transformer 注意力机制，我需要先回忆原理再查最新进展。\n"
-                "Action: web_search\n"
-                "Action Input: {\"query\": \"Transformer attention mechanism latest\"}\n\n"
                 "用户和前端会直接看到这个思考过程，提升透明度和调试能力。\n"
                 "必须在 Thinking 开头显式写「Phase X: ...」引用Master Plan当前阶段，否则视为违规。\n\n"
             )
 
-            # 构建 system_prompt（保持原有逻辑，只替换 ReAct 部分）
-        system_prompt = (
-            f"{self.role}\n"
-            f"【当前Master Plan摘要】\n{plan_summary}\n\n"
-            f"{self.shared_knowledge}\n"
-            f"{system_extra}\n"
-            "你是多智能体协作团队的一员，请提供有价值、准确、有深度的贡献。\n\n"
-            f"{format_instruction}"
-        )
+        # 🔥 Token 优化核心（你已经做的部分）
+        if round_num <= 1:  # 第一轮用完整版
+            system_prompt = (
+                f"{self.role}\n"
+                f"【当前Master Plan摘要】\n{plan_summary}\n\n"
+                f"{self.shared_knowledge}\n"
+                f"{system_extra}\n"
+                "你是多智能体协作团队的一员，请提供有价值、准确、有深度的贡献。\n\n"
+                f"{format_instruction}"
+            )
+        else:  # 后续轮次极简版（省 Token 主力）
+            system_prompt = (
+                f"{self.role}\n"
+                f"【继续严格遵循 Master Plan】\n"
+                f"{system_extra}\n"
+                "请保持一致的思考格式继续贡献。\n\n"
+                f"{format_instruction}"  # ← 关键：格式要求仍然保留
+            )
 
         messages = [{"role": "system", "content": system_prompt}]
 
@@ -2268,6 +2276,30 @@ class MultiAgentSwarm:
         if self._check_cancellation():
             return "⏸️ 任务在最终综合前被取消"
 
+        # ====================== 【质量提升核心】最终自检机制 ======================
+        # 让 Leader 在生成最终答案前做一次系统性自检（最小改动，收益最大）
+        self_check_prompt = (
+            "【最终自检指令 - 必须严格执行】\n"
+            "请严格对照 Master Plan 检查全部讨论：\n"
+            "1. 每个 Phase 是否都有明确结论和输出？\n"
+            "2. 是否存在逻辑漏洞或重要遗漏？\n"
+            "3. 是否需要生成结构化可下载文件？\n"
+            "请输出简洁的自检结果（200 字以内）。"
+        )
+
+        self_check = self.leader.generate_response(
+            history,
+            round_num + 1,
+            system_extra=self_check_prompt,
+            force_non_stream=True
+        )
+
+        history.append({
+            "speaker": "System",
+            "content": f"【最终自检报告】\n{self_check}"
+        })
+        # =====================================================================
+
         final_answer = self.leader.generate_response(
             history,
             round_num + 1,
@@ -2632,55 +2664,78 @@ class MultiAgentSwarm:
         tracker.checkpoint("4️⃣ 最终综合")
         return final_answer
 
+    # def _compress_history(self, history: List[Dict], max_tokens_approx: int = 20000) -> List[Dict]:
+    #     """极简滚动压缩：只保留最近N轮 + Primal摘要 + 永久保留 Master Plan（v3.1 优化版）
+    #
+    #     核心改进：
+    #     - Master Plan 永远保留在压缩历史最前面（防止最终综合时丢失计划）
+    #     - 短历史直接返回（零开销）
+    #     - 超长时才触发 Leader 总结兜底
+    #     """
+    #     if len(history) < 8:  # 短历史不压缩
+    #         return history
+    #
+    #     # 估算tokens（粗略：中文≈2char=1token）
+    #     total_chars = sum(len(str(h.get("content", ""))) for h in history)
+    #     if total_chars < max_tokens_approx * 2:
+    #         return history
+    #
+    #     # 🔥【关键优化】永远保留 Master Plan（放在最前面）
+    #     plan_msg = next(
+    #         (h for h in history if "Master Plan" in str(h.get("content", ""))),
+    #         None
+    #     )
+    #
+    #     # 保留：Primal记忆 + Master Plan + 最近3轮讨论
+    #     compressed = [
+    #         h for h in history
+    #         if h["speaker"] == "System" and "Primal记忆" in str(h.get("content", ""))
+    #     ]
+    #
+    #     if plan_msg:
+    #         compressed.insert(0, plan_msg)  # Master Plan 永远第一位
+    #
+    #     compressed.extend(history[-6:])  # 保留最近3轮（每轮约2条）
+    #
+    #     # 如果还是太长，让Leader做一次超短总结
+    #     if len(str(compressed)) > max_tokens_approx * 3:
+    #         summary_prompt = (
+    #             "请用800字以内总结以上全部历史，"
+    #             "只保留关键决策、教训和结论，不要重复细节。"
+    #         )
+    #         short_summary = self.leader.generate_response(
+    #             [{"speaker": "System", "content": summary_prompt}] + compressed[-4:],
+    #             0,
+    #             force_non_stream=True
+    #         )
+    #         compressed = [{
+    #             "speaker": "System",
+    #             "content": f"📜 历史压缩总结：\n{short_summary}"
+    #         }]
+    #
+    #     return compressed
+
     def _compress_history(self, history: List[Dict], max_tokens_approx: int = 20000) -> List[Dict]:
-        """极简滚动压缩：只保留最近N轮 + Primal摘要 + 永久保留 Master Plan（v3.1 优化版）
-
-        核心改进：
-        - Master Plan 永远保留在压缩历史最前面（防止最终综合时丢失计划）
-        - 短历史直接返回（零开销）
-        - 超长时才触发 Leader 总结兜底
-        """
-        if len(history) < 8:  # 短历史不压缩
+        if len(history) < 6:
             return history
 
-        # 估算tokens（粗略：中文≈2char=1token）
-        total_chars = sum(len(str(h.get("content", ""))) for h in history)
-        if total_chars < max_tokens_approx * 2:
-            return history
+        # 🔥 永久保留 Master Plan（只保留最新一次）
+        plan_msg = next((h for h in history if "Master Plan" in str(h.get("content", ""))), None)
 
-        # 🔥【关键优化】永远保留 Master Plan（放在最前面）
-        plan_msg = next(
-            (h for h in history if "Master Plan" in str(h.get("content", ""))),
-            None
-        )
-
-        # 保留：Primal记忆 + Master Plan + 最近3轮讨论
-        compressed = [
-            h for h in history
-            if h["speaker"] == "System" and "Primal记忆" in str(h.get("content", ""))
-        ]
-
+        # 保留：Primal记忆 + 最新 Plan + 最后 2 轮
+        compressed = [h for h in history if "Primal记忆" in str(h.get("content", ""))]
         if plan_msg:
-            compressed.insert(0, plan_msg)  # Master Plan 永远第一位
+            compressed.insert(0, plan_msg)
+        compressed.extend(history[-6:])  # 最后 3 轮（每轮约 2 条）
 
-        compressed.extend(history[-6:])  # 保留最近3轮（每轮约2条）
-
-        # 如果还是太长，让Leader做一次超短总结
+        # 超长时一键总结（已存在逻辑，保留）
         if len(str(compressed)) > max_tokens_approx * 3:
-            summary_prompt = (
-                "请用800字以内总结以上全部历史，"
-                "只保留关键决策、教训和结论，不要重复细节。"
-            )
             short_summary = self.leader.generate_response(
-                [{"speaker": "System", "content": summary_prompt}] + compressed[-4:],
-                0,
-                force_non_stream=True
+                [{"speaker": "System", "content": "用400字以内总结以上全部历史，只保留关键决策和结论。"}] + compressed[
+                                                                                                          -4:],
+                0, force_non_stream=True
             )
-            compressed = [{
-                "speaker": "System",
-                "content": f"📜 历史压缩总结：\n{short_summary}"
-            }]
-
+            compressed = [{"speaker": "System", "content": f"📜 历史压缩总结：\n{short_summary}"}]
         return compressed
 
     def active_distill_and_evaluate(self, history: List[Dict], final_answer: str):
