@@ -123,7 +123,7 @@ shared_knowledge: |
 
 feishu:
   enabled: true
-  app_id: "cli_a928fa6cd7f9dbb3"                  # 你的 App ID
+  app_id: "{env:MAS_APP_SECRET}"                  # 你的 App ID
   app_secret: "{env:MAS_APP_SECRET}"   # ← 必须正确！
 
 email:
