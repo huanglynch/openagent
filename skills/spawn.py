@@ -1,6 +1,6 @@
 # skills/spawn.py
 import threading
-from multi_agent_swarm_v3 import MultiAgentSwarm  # 复用主系统
+from multi_agent_swarm_v4 import MultiAgentSwarm  # 复用主系统
 
 def tool_function(sub_task: str, memory_key: str = "subtask"):
     """启动一个独立的子Agent异步执行任务"""
