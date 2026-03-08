@@ -2365,88 +2365,123 @@ class MultiAgentSwarm:
             return round_num == 1 or (prev_quality > 0 and prev_quality < threshold)
 
     def _classify_task_complexity(self, task: str) -> str:
-        """智能任务分类器 v4（彻底基于任务性质 + AI 主导，最优版）"""
-        # ===== 极简强规则层（只保护最必要场景）=====
-        if "[邮件主题]" in task and "[邮件内容]" in task:
-            try:
-                task = task.split("[邮件内容]")[-1].strip()
-                task = re.sub(r'^\[.*?\]\s*', '', task, flags=re.DOTALL).strip()
-                logging.info(f"📧 邮件清洗后用于分类: {task[:100]}...")
-            except:
-                pass
-
-        task_lower = task.lower().strip()
+        """FSDT 通用分类器 v2.1 - 多语言强化版（中日英完美均衡）"""
+        task = task.strip()
+        task_lower = task.lower()  # 英文用
         task_len = len(task)
 
-        # 2. 极简问候/超短问题
-        if (task_len < 25 and any(w in task_lower for w in ["你好", "hi", "hello", "嘿", "谢谢", "ok", "好的"])) or \
-                (task.endswith("?") and task_len < 35):
-            logging.info("🟢 简单问候/短问题 → SIMPLE")
+        # ==================== Step 1: 极简硬规则（中日英全覆盖）====================
+        greet_words = ["你好", "hi ", "hello", "嘿", "谢谢", "ok", "好的", "明白",
+                       "こんにちは", "おはよう", "ありがとう", "はい", "了解",
+                       "hello", "hi", "thanks", "ok"]
+        if task_len < 20 or any(w in task_lower or w in task for w in greet_words):
             return "simple"
 
-        # ===== 🔥 方案二：用户主动触发 Complex（中英日全面支持）=====
-        force_keywords = [
+        # 强制 complex（中日英实时动态关键词）
+        force_complex = [
             # 中文
-            "完整模式", "complex模式", "复杂模式", "深度模式", "实时追踪", "多轮反思",
-            "强制复杂", "用完整模式", "深度分析", "最新动态追踪", "实时新闻", "全面分析",
-            "强制完整", "用 complex", "必须 complex", "完整版", "深度版",
+            "实时", "最新", "现在", "今天新闻", "当前局势", "追踪", "实时新闻", "complex模式", "复杂模式",
+            # 日文
+            "リアルタイム", "最新", "今", "ニュース", "状況追跡", "複雑モード",
             # 英文
-            "complex mode", "full mode", "deep mode", "real-time tracking", "multi-round",
-            "force complex", "use complex", "deep analysis", "latest dynamic", "real time",
-            "force full", "complete mode",
-            # 日语（直接匹配原字符）
-            "複雑モード", "完全モード", "ディープモード", "リアルタイム追跡", "最新動向",
-            "強制複雑", "深度分析", "リアルタイムニュース", "フルモード"
+            "real-time", "latest", "now", "news", "tracking", "complex mode"
         ]
-
-        if any(kw in task_lower or kw in task for kw in force_keywords):  # 支持日语原字符
-            logging.info("🔴 用户主动要求 → COMPLEX（中英日触发）")
+        if any(kw in task_lower or kw in task for kw in force_complex):
             return "complex"
 
-        # ===== AI主导判断（核心：基于任务性质 + UT自动识别）=====
-        classify_prompt = (
-            f"任务: {task[:480]}\n\n"
-            "只回复一个词（不要解释）：simple / medium / balanced / complex\n\n"
-            "判断规则（严格基于任务性质和必要性）：\n"
-            "- simple：纯问候、单句事实、无需工具、无需结构化\n"
-            "- medium：概念解释、简单对话跟进（继续、为什么、解释一下）\n"
-            "- balanced：需要规划 + 工具调用 + 结构化输出（分析、总结、报告、整理、附件处理、生成文件、带下载链接等）——这是最常见场景\n"
-            "  → **特别注意**：如果任务是「单元测试生成」「写测试用例」「调试测试失败」「修复编译错误」「补单测」「生成 pytest/Jest/JUnit/xUnit 测试代码」等（包括中文、日语、英文任何自然表达，如 単体テスト、ユニットテスト、unit test、テスト書いて 等），**必须选择 balanced**（它需要结构化文件交付和工具调用）\n"
-            "- complex：需要实时最新信息 + 多轮反思 + 知识图谱 + 对抗辩论（纯新闻动态、超复杂多步任务、深度实时追踪）\n\n"
-            "优先考虑 balanced（它是质量与性能的最佳平衡点）。只有真正需要「最新实时动态」或「极高反思深度」时才选 complex。\n"
-            "回复:"
-        )
+        # ==================== Step 2: Semantic Boost 关键词权重（中日英三语）====================
+        balanced_keywords = [
+            # 中文
+            "分析", "报告", "总结", "对比", "生成", "整理", "编辑", "下载", "文件", "结构化",
+            "第一性原理", "深入", "深刻", "全面", "质量一致性", "Master Plan", "辩论", "反思",
+            "写报告", "做分析", "生成文件", "单元测试", "测试用例",
+            # 日文
+            "分析", "レポート", "まとめ", "比較", "生成", "整理", "編集", "ダウンロード", "ファイル", "構造化",
+            "第一原理", "深く分析", "単体テスト", "テストケース",
+            # 英文
+            "analyze", "report", "summary", "compare", "generate", "organize", "edit", "download", "file",
+            "structured",
+            "first principles", "deep analysis", "unit test", "test case"
+        ]
+        complex_keywords = [
+            # 中文
+            "实时追踪", "最新动态", "多轮反思", "知识图谱", "对抗辩论",
+            # 日文
+            "リアルタイム追跡", "最新動向", "多輪考察", "知識グラフ",
+            # 英文
+            "real-time tracking", "latest dynamics", "multi-round reflection", "knowledge graph",
+            "adversarial debate"
+        ]
+
+        score = {
+            "balanced": sum(1 for kw in balanced_keywords if kw in task_lower or kw in task) * 2,
+            "complex": sum(1 for kw in complex_keywords if kw in task_lower or kw in task) * 3
+        }
+        if score["balanced"] >= 4:
+            return "balanced"
+        if score["complex"] >= 3:
+            return "complex"
+
+        # ==================== Step 3: Few-Shot AI 分类（中日英示例全覆盖）====================
+        classify_prompt = f"""任务: {task[:500]}
+
+你是一个专业任务复杂度分类器。请严格按照以下决策树和示例，只回复一个 JSON（不要任何解释）：
+
+```json
+{{
+  "category": "simple | medium | balanced | complex",
+  "confidence": 0-100,
+  "reason": "一句话原因"
+}}
+```
+
+**决策树（必须严格遵守）**：
+1. 纯问候、闲聊、单句事实、无需工具、无需结构 → simple
+2. 概念解释、简单追问、继续对话 → medium
+3. 需要规划 + 工具调用 + 结构化输出（分析、报告、总结、对比、生成文件、测试用例、附件处理、下载链接）→ **balanced**（默认优先）
+4. 需要实时最新信息 + 多轮反思 + 知识图谱 + 对抗辩论（新闻追踪、超复杂多步）→ complex
+
+**Few-Shot 示例（中日英全覆盖，必须参考）**：
+- "你好，今天天气怎么样？" / "こんにちは、天気はどう？" / "Hello, how's the weather?" → simple
+- "请解释 Transformer 注意力机制" / "Transformerのアテンション機構を説明して" / "Explain Transformer attention mechanism" → medium
+- "请帮我分析最近伊朗局势并生成一份带下载链接的报告" / "イラン情勢を分析してレポートを生成してください" / "Analyze Iran situation and generate a report with download link" → balanced
+- "从第一性原理深入分析 WebUI 和邮件质量是否一致" / "第一原理でWebUIとメールの品質一致性を深く分析" / "Deep first-principles analysis of WebUI vs email quality consistency" → balanced
+- "写一篇关于大语言模型训练技术的深度分析报告" / "大規模言語モデルのトレーニング技術の深い分析レポートを書いて" / "Write a deep analysis report on LLM training techniques" → balanced
+- "请写单元测试用例修复这个 bug" / "このバグを直すユニットテストを書いて" / "Write unit tests to fix this bug" → balanced
+- "实时追踪伊朗最新动态" / "イランの最新動向をリアルタイム追跡" / "Real-time tracking of latest Iran developments" → complex
+- "こんにちは" / "Hello" → simple
+
+现在请分类以上任务。回复严格 JSON：
+"""
 
         try:
             response = self.leader.client.chat.completions.create(
                 model=self.leader.model,
-                messages=[
-                    {"role": "system",
-                     "content": "你是任务复杂度分类器。只回复一个词：simple、medium、balanced 或 complex。请严格根据任务性质（规划需求、工具需求、结构化需求、实时性需求）判断。balanced 是最常见、最优模式，请优先考虑。"},
-                    {"role": "user", "content": classify_prompt}
-                ],
+                messages=[{"role": "system", "content": "你只输出 JSON，不输出任何其他文字。"},
+                          {"role": "user", "content": classify_prompt}],
                 temperature=0.0,
-                max_tokens=20,
-                timeout=10
+                max_tokens=150
             )
-            content = (response.choices[0].message.content or "").strip().lower()
+            content = response.choices[0].message.content.strip()
+            data = json.loads(content.replace("```json", "").replace("```", "").strip())
 
-            if "complex" in content:
-                logging.info(f"🔴 AI判断（任务性质）→ COMPLEX")
-                return "complex"
-            elif "balanced" in content:
-                logging.info(f"🟠 AI判断（任务性质）→ BALANCED")
-                return "balanced"
-            elif "medium" in content:
-                logging.info(f"🟡 AI判断（任务性质）→ MEDIUM")
-                return "medium"
-            else:
-                logging.info(f"🟢 AI判断（任务性质）→ SIMPLE")
-                return "simple"
+            category = data.get("category", "balanced").lower()
+            confidence = data.get("confidence", 70)
+
+            # Self-Consistency：低置信自动升一级（防误判 simple）
+            if confidence < 70:
+                if category == "simple":
+                    category = "medium"
+                elif category == "medium":
+                    category = "balanced"
+
+            logging.info(
+                f"📊 FSDT v2.1 分类结果: {category.upper()} | 置信度: {confidence}% | 语言: 中/日/英 | 原因: {data.get('reason', '')}")
+            return category
 
         except Exception as e:
-            logging.warning(f"AI分类失败: {e}，默认balanced")
-            return "balanced"
+            logging.warning(f"FSDT AI 分类失败: {e}，回退 semantic 评分")
+            return "balanced" if score["balanced"] >= 2 else "medium"
 
     def _solve_simple(
             self,
