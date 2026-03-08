@@ -57,15 +57,15 @@ def decode_email_payload(part):
         if not payload:
             return ""
 
-        # 🔥 优先尝试 charset 参数
+        # 🔥 优先尝试 charset 参数（方法3：直接信任邮件头）
         charset = part.get_content_charset()
         if charset:
             try:
                 decoded = payload.decode(charset, errors='strict')
-                # 验证是否包含有效字符
-                if decoded and sum(c.isprintable() for c in decoded) / max(len(decoded), 1) > 0.5:
+                # ✅ 只要有非空内容就信任（关键修改）
+                if decoded and len(decoded.strip()) > 0:
                     print(f"  ✅ 使用 Content-Type charset={charset} 解码成功")
-                    return decoded
+                    return decoded  # 直接返回，不再做后续验证
             except Exception as e:
                 print(f"  ⚠️ charset={charset} 解码失败: {e}")
 
@@ -1265,6 +1265,7 @@ def start_email_poller(config: dict):
                             body = decode_email_payload(msg)
 
                     # ✅ 如果纯文本为空，使用 HTML 转文本
+                    # ✅ 如果纯文本为空，使用 HTML 转文本
                     if not body.strip() or len(body) < 10:
                         if html_body:
                             print(f"  ⚠️  纯文本缺失，转换 HTML")
@@ -1282,20 +1283,22 @@ def start_email_poller(config: dict):
                             # 清理多余空白
                             body = re.sub(r'\s+', ' ', body).strip()
 
-                            # 智能判断是否为有效内容
+                            # ✅ 智能判断是否为有效内容（修复后）
                             if body:
-                                visible_chars = sum(1 for c in body if c.isprintable() and not c.isspace())
+                                # 统计所有有效字符（中文 + 英文数字 + 常用标点）
+                                valid_chars = sum(1 for c in body if (
+                                        c.isalnum() or  # 英文/数字
+                                        '\u4e00' <= c <= '\u9fff' or  # 中文
+                                        '\u3040' <= c <= '\u30ff' or  # 日文
+                                        c in '，。！？、；：""''（）《》【】…—'  # 中文标点
+                                ))
 
-                                if visible_chars < 5:
+                                # ✅ 只要有1个以上有效字符就认为有效（原阈值 3 太高）
+                                if valid_chars < 1:
                                     body = "[邮件正文无法解析 - 可能是纯图片或格式化邮件]"
-                                    print(f"  ⚠️  正文无效（可见字符: {visible_chars}）")
+                                    print(f"  ⚠️  正文无效（有效字符: {valid_chars}）")
                                 else:
-                                    meaningful_chars = sum(1 for c in body if c.isalnum() or c in '，。！？、；：""''（）《》【】…—')
-                                    if meaningful_chars < 3:
-                                        body = "[邮件正文无法解析 - 可能是纯图片或格式化邮件]"
-                                        print(f"  ⚠️  正文无效（有意义字符: {meaningful_chars}）")
-                                    else:
-                                        print(f"  ✅ HTML 转文本成功（{len(body)} 字符，{meaningful_chars} 有意义字符）")
+                                    print(f"  ✅ HTML 转文本成功（{len(body)} 字符，{valid_chars} 有效字符）")
 
                     # 标记已读
                     mail.store(mail_id, '+FLAGS', '\\Seen')
@@ -1580,7 +1583,11 @@ def start_email_poller(config: dict):
                         print(f"👤 {email_data['from']}")
 
                         # 保持和飞书/WebUI 完全一致的干净输入
-                        full_question = f"[来自邮件]\n{email_data['subject']}\n\n{email_data['body']}"
+                        # full_question = f"[来自邮件]\n{email_data['subject']}\n\n{email_data['body']}"
+                        # 第 1046 行改为:
+                        full_question = f"[来自邮件] {email_data['body']}"
+                        if email_data['attachments']:
+                            full_question += "\n\n[附件]\n" + "\n".join(f"- {a}" for a in email_data['attachments'])
 
                         if email_data['attachments']:
                             full_question += "\n\n[附件]\n" + "\n".join(f"- {a}" for a in email_data['attachments'])
