@@ -159,7 +159,7 @@ advanced_features:
 
 intelligent_routing:
   enabled: true
-  force_complexity: null                # "simple" / "medium" / "complex"
+  force_complexity: null                # "simple" / "medium" / balanced / "complex"
 ```
 
 All features are hot-reloadable via WebUI `/api/config`.
