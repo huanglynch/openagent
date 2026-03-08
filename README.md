@@ -1,3 +1,6 @@
+<image-card alt="Stars" src="https://img.shields.io/github/stars/huanglynch/MultiAgentSwarm?style=social" ></image-card>
+<image-card alt="License" src="https://img.shields.io/github/license/huanglynch/MultiAgentSwarm" ></image-card>
+
 # MultiAgentSwarm v4.1.0 (ReAct Visualization Edition)
 **Self-Adaptive Digital Team**  
 **A fully visible, self-evolving ReAct Digital Team** that intelligently decides *when to be fast* and *when to go deep*.
