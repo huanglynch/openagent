@@ -1678,7 +1678,6 @@ class MultiAgentSwarm:
         tracker = TimeTracker()
         # 🔥 防御性自动多模态图片检测（飞书/文本路径自动生效）
         if (image_paths is None or len(image_paths) == 0) and isinstance(task, str):
-            import re
             matches = re.findall(r'(?:uploads[/\\]|/uploads/)([^"\s]+\.(?:png|jpg|jpeg|gif|bmp))', task, re.IGNORECASE)
             if matches:
                 image_paths = []
@@ -1721,6 +1720,15 @@ class MultiAgentSwarm:
                 complexity = (force_complexity or
                               self.force_complexity or
                               self._classify_task_complexity(classification_task))
+
+                # === 🔥 通道复杂度上限控制（修复版）===
+                # ✅ 只对设置了 _webui_auto_mode 的 WebUI 实例生效
+                if getattr(self, '_webui_auto_mode', False) and complexity == "complex":
+                    complexity = "balanced"
+                    print("🔒 [WebUI自动模式] Complex 已降级为 Balanced")
+                    if log_callback:
+                        log_callback("🔒 WebUI自动模式：已切换至 Balanced")
+                # ====================================================
             else:
                 complexity = "complex"
 
@@ -1743,7 +1751,6 @@ class MultiAgentSwarm:
                 log_callback(f"📷 处理 {len(image_paths)} 张图片")
 
         # 🔥 附件路径强规范化（兼容 Windows \ 和动态 UUID 文件名污染）
-        import re
         if "uploads" in task:
             # 统一转正斜杠 + 清理多余路径
             task = re.sub(r'uploads\\?/?', 'uploads/', task)          # 统一前缀
@@ -2484,15 +2491,32 @@ class MultiAgentSwarm:
 """
 
         try:
+            # === 🔥 最小改动 · 鲁棒JSON强制解析（解决所有NVIDIA污染）===
+            system_prompt = "你是一个严格的JSON输出机器。**必须**只返回一个合法的JSON对象，不要输出任何其他文字、解释、代码块、前缀或后缀。你的整个回复必须能被json.loads()直接解析。"
+
             response = self.leader.client.chat.completions.create(
                 model=self.leader.model,
-                messages=[{"role": "system", "content": "你只输出 JSON，不输出任何其他文字。"},
-                          {"role": "user", "content": classify_prompt}],
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": classify_prompt}
+                ],
                 temperature=0.0,
-                max_tokens=150
+                max_tokens=200
             )
-            content = response.choices[0].message.content.strip()
-            data = json.loads(content.replace("```json", "").replace("```", "").strip())
+
+            raw_content = (response.choices[0].message.content or "").strip()
+            logging.info(f"[FSDT] 模型原始返回前300字符: {raw_content[:300]}...")  # 便于调试
+
+            # 🔥 核心修复：暴力提取第一个完整 JSON 对象（最可靠方式）
+            json_match = re.search(r'(\{[\s\S]*?\})', raw_content)  # 贪婪匹配第一个 {}
+            json_str = json_match.group(1) if json_match else raw_content
+
+            # 再做一次常规清理（双保险）
+            json_str = json_str.replace("```json", "").replace("```", "").strip()
+            json_str = re.sub(r'^[^{\[]+', '', json_str)  # 移除前面所有非JSON文字
+
+            data = json.loads(json_str)
+            # ============================================================
 
             category = data.get("category", "balanced").lower()
             confidence = data.get("confidence", 70)
@@ -2504,13 +2528,24 @@ class MultiAgentSwarm:
                 elif category == "medium":
                     category = "balanced"
 
+            # ==================== 🔥 WebUI 自动模式安全检查（新增）====================
+            if getattr(self, '_webui_auto_mode', False) and category == "complex":
+                logging.info("🌐 [WebUI安全] 自动路由检测到 Complex → 已降级为 Balanced")
+                category = "balanced"
+            # ========================================================================
+
             logging.info(
                 f"📊 FSDT v2.1 分类结果: {category.upper()} | 置信度: {confidence}% | 语言: 中/日/英 | 原因: {data.get('reason', '')}")
             return category
 
         except Exception as e:
             logging.warning(f"FSDT AI 分类失败: {e}，回退 semantic 评分")
-            return "balanced" if score["balanced"] >= 2 else "medium"
+            # ==================== 🔥 异常路径也要检查（新增）====================
+            fallback_category = "balanced" if score["balanced"] >= 2 else "medium"
+            if getattr(self, '_webui_auto_mode', False) and fallback_category == "complex":
+                fallback_category = "balanced"
+            return fallback_category
+            # ================================================================
 
     def _solve_simple(
             self,

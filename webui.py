@@ -533,6 +533,17 @@ async def websocket_endpoint(websocket: WebSocket):
             # 当前会话的独立 Swarm 实例（必须先定义！）
             current_swarm = get_or_create_swarm(session_id)
             current_swarm._reset_cancel_flag()
+
+            # ====================== 【WebUI双层控制】 ======================
+            if force_complexity in ("simple", "balanced", "complex"):
+                # 手动选择：完全放行
+                print(f"🌐 [WebUI] 用户手动选择 {force_complexity.capitalize()}")
+                current_swarm._webui_auto_mode = False
+            else:
+                # 自动模式：启用 Complex 降级保护
+                print(f"🌐 [WebUI] 自动模式 → Complex 降级保护已启用")
+                current_swarm._webui_auto_mode = True
+                force_complexity = None  # 让 Swarm 自动路由
             # ============================================================
 
             user_msg = {
@@ -1327,100 +1338,6 @@ def start_email_poller(config: dict):
             import traceback
             traceback.print_exc()
             return []
-
-    # def send_reply(to: str, subject: str, body: str, original_date: str = "", attachments: List[str] = None):
-    #     """发送专业HTML邮件 - Markdown自动美化（最小改动核心修复）"""
-    #     try:
-    #         msg = MIMEMultipart('alternative')  # ← 关键：改成 alternative（同时支持纯文本+HTML）
-    #
-    #         msg['From'] = formataddr((Header("MultiAgentSwarm AI", 'utf-8').encode(), config['imap_user']))
-    #         msg['To'] = to
-    #         msg['Subject'] = Header(subject, 'utf-8')
-    #
-    #         # 纯文本版本（兼容纯文本客户端）
-    #         plain_text = re.sub(r'\*\*|\#+\s|\`|\[.*?\]\(.*?\)', '', body)[:2500]
-    #         plain_text = re.sub(r'\n{3,}', '\n\n', plain_text)
-    #
-    #         # Markdown → 美观 HTML（核心）
-    #         try:
-    #             # 使用 'extra' 元扩展（官方推荐），自动包含 tables + fenced_code + nl2br 等
-    #             # 彻底解决“table module”找不到的问题
-    #             html_content = markdown.markdown(
-    #                 body,
-    #                 extensions=['extra', 'attr_list', 'tables', 'fenced_code']
-    #             )
-    #         except Exception as e:
-    #             print(f"⚠️ Markdown 转换失败，使用纯文本兜底: {e}")
-    #             html_content = body.replace('\n', '<br>')
-    #
-    #         full_html = f"""
-    #         <!DOCTYPE html>
-    #         <html>
-    #         <head>
-    #             <meta charset="utf-8">
-    #             <style>
-    #                 body {{ font-family: Arial, "Helvetica Neue", "Microsoft YaHei", sans-serif;
-    #                        line-height: 1.7; color: #333; max-width: 720px; margin: 0 auto; padding: 20px; }}
-    #                 h1 {{ color: #1e88e5; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
-    #                 h2 {{ color: #1976d2; margin-top: 28px; }}
-    #                 h3 {{ color: #1565c0; }}
-    #                 ul, ol {{ padding-left: 28px; }}
-    #                 li {{ margin: 6px 0; }}
-    #                 pre {{ background: #f5f7f9; padding: 14px; border-radius: 8px; overflow-x: auto; border: 1px solid #e0e0e0; }}
-    #                 code {{ font-family: Consolas, monospace; background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }}
-    #                 blockquote {{ border-left: 5px solid #ddd; padding-left: 18px; color: #555; margin: 20px 0; }}
-    #                 hr {{ border: none; border-top: 1px solid #eee; margin: 30px 0; }}
-    #             </style>
-    #         </head>
-    #         <body>
-    #             {html_content}
-    #             <hr>
-    #             <p style="color:#666; font-size:13px;">本邮件由 MultiAgentSwarm AI 系统自动生成</p>
-    #         </body>
-    #         </html>
-    #         """
-    #
-    #         # 附加两个版本（标准做法，优先显示HTML）
-    #         msg.attach(MIMEText(plain_text, 'plain', 'utf-8'))
-    #         msg.attach(MIMEText(full_html, 'html', 'utf-8'))
-    #
-    #         # 附件处理（完全保持原逻辑）
-    #         if attachments:
-    #             from email.mime.base import MIMEBase
-    #             from email import encoders
-    #             for file_path in attachments:
-    #                 try:
-    #                     if os.path.exists(file_path):
-    #                         with open(file_path, 'rb') as f:
-    #                             part = MIMEBase('application', 'octet-stream')
-    #                             part.set_payload(f.read())
-    #                             encoders.encode_base64(part)
-    #                             filename = os.path.basename(file_path)
-    #                             part.add_header('Content-Disposition',
-    #                                             f'attachment; filename="{Header(filename, "utf-8").encode()}"')
-    #                             msg.attach(part)
-    #                 except Exception as e:
-    #                     print(f"⚠️ 附件添加失败 {file_path}: {e}")
-    #
-    #         # 发送逻辑（完全不变）
-    #         port = config.get("smtp_port", 465)
-    #         if port == 465:
-    #             server = smtplib.SMTP_SSL(config["smtp_server"], port)
-    #         else:
-    #             server = smtplib.SMTP(config["smtp_server"], port)
-    #             server.starttls()
-    #         server.login(config["imap_user"], config["imap_pass"])
-    #         server.send_message(msg)
-    #         server.quit()
-    #
-    #         print(f"✅ 专业HTML邮件已发送 → {to}")
-    #         return True
-    #
-    #     except Exception as e:
-    #         print(f"❌ 邮件发送失败: {e}")
-    #         import traceback
-    #         traceback.print_exc()
-    #         return False
 
     def send_reply(to: str, subject: str, body: str, original_date: str = "", attachments: List[str] = None):
         """发送专业HTML邮件 - Markdown自动美化（已优化版）"""
